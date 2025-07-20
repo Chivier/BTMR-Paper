@@ -1,0 +1,33 @@
+# Environment
+.env
+.venv
+env/
+venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Output files
+output/
+*.pdf
+*.html
+*.json
+
+# Temporary files
+*.tmp
+*.temp
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Images directory (if used for temporary storage)
+images/
+
+# Draft directory
+draft/
