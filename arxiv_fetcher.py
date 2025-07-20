@@ -4,21 +4,25 @@ ArXiv paper fetcher supporting HTML, PDF, and source formats
 import os
 import re
 import requests
-from typing import Optional, Tuple, List
-from urllib.parse import urlparse
+from typing import Optional, Tuple, List, Dict
+from urllib.parse import urlparse, urljoin
 from bs4 import BeautifulSoup
 import tempfile
 from PIL import Image
+import shutil
 
 
 class ArxivFetcher:
     """Fetch and extract content from arxiv papers"""
     
-    def __init__(self):
+    def __init__(self, output_dir: Optional[str] = None):
         self.base_url = "https://arxiv.org"
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
+        self.output_dir = output_dir
+        self.images_dir = None
+        self.downloaded_images = {}  # Map from original URL to local path
     
     def _extract_arxiv_id(self, url: str) -> Optional[str]:
         """Extract arxiv ID from various URL formats"""
@@ -40,11 +44,70 @@ class ArxivFetcher:
         
         return None
     
-    def fetch_html(self, url: str) -> str:
-        """Fetch HTML version of the paper"""
+    def _download_image(self, img_url: str, base_url: str, img_index: int) -> Optional[str]:
+        """Download an image and return the local path"""
+        try:
+            # Skip data URLs
+            if img_url.startswith('data:'):
+                return None
+                
+            # Handle relative URLs
+            if not img_url.startswith(('http://', 'https://')):
+                # For ArXiv, images are in the same directory as the HTML
+                img_url = urljoin(base_url + '/', img_url)
+            
+            # Check if already downloaded
+            if img_url in self.downloaded_images:
+                return self.downloaded_images[img_url]
+            
+            response = requests.get(img_url, headers=self.headers, timeout=10)
+            response.raise_for_status()
+            
+            # Determine file extension
+            content_type = response.headers.get('content-type', '').lower()
+            if 'png' in content_type:
+                ext = '.png'
+            elif 'jpeg' in content_type or 'jpg' in content_type:
+                ext = '.jpg'
+            elif 'gif' in content_type:
+                ext = '.gif'
+            elif 'svg' in content_type:
+                ext = '.svg'
+            else:
+                # Try to get from URL
+                parsed_url = urlparse(img_url)
+                path_ext = os.path.splitext(parsed_url.path)[1]
+                ext = path_ext if path_ext in ['.png', '.jpg', '.jpeg', '.gif', '.svg'] else '.png'
+            
+            # Save image
+            img_filename = f"arxiv_img_{img_index}{ext}"
+            if self.images_dir:
+                img_path = os.path.join(self.images_dir, img_filename)
+                with open(img_path, 'wb') as f:
+                    f.write(response.content)
+                
+                # Store mapping
+                self.downloaded_images[img_url] = img_path
+                return img_path
+            
+        except Exception as e:
+            print(f"Failed to download image {img_url}: {e}")
+            return None
+    
+    def fetch_html(self, url: str) -> Tuple[str, Dict[str, str]]:
+        """Fetch HTML version of the paper and download images
+        
+        Returns:
+            Tuple of (html_content_with_modified_img_tags, image_mapping)
+        """
         arxiv_id = self._extract_arxiv_id(url)
         if not arxiv_id:
             raise ValueError(f"Could not extract arxiv ID from URL: {url}")
+        
+        # Setup images directory if output_dir is provided
+        if self.output_dir:
+            self.images_dir = os.path.join(self.output_dir, 'images')
+            os.makedirs(self.images_dir, exist_ok=True)
         
         # Try HTML version first
         html_url = f"{self.base_url}/html/{arxiv_id}"
@@ -55,7 +118,19 @@ class ArxivFetcher:
             # Extract main content
             content = soup.find('div', {'class': 'ltx_page_main'})
             if content:
-                return content.get_text(separator='\n', strip=True)
+                # Download all images
+                img_index = 1
+                for img in content.find_all('img'):
+                    img_url = img.get('src', '')
+                    if img_url:
+                        local_path = self._download_image(img_url, html_url, img_index)
+                        if local_path:
+                            # Update img tag with local path
+                            img['src'] = local_path
+                            img_index += 1
+                
+                # Return HTML string with updated image paths
+                return str(content), self.downloaded_images
         
         # Fallback to abstract page
         abs_url = f"{self.base_url}/abs/{arxiv_id}"
@@ -76,7 +151,8 @@ class ArxivFetcher:
             abstract = soup.find('blockquote', {'class': 'abstract'})
             abstract_text = abstract.get_text(strip=True) if abstract else ""
             
-            return f"Title: {title_text}\n\nAuthors: {authors_text}\n\nAbstract: {abstract_text}"
+            html_content = f"<div><h1>{title_text}</h1><p>{authors_text}</p><p>{abstract_text}</p></div>"
+            return html_content, {}
         
         raise Exception(f"Failed to fetch HTML content for arxiv ID: {arxiv_id}")
     
@@ -219,7 +295,7 @@ class ArxivFetcher:
         
         raise Exception(f"Failed to extract source for arxiv ID: {arxiv_id}")
     
-    def fetch(self, url: str, format: str = "auto") -> Tuple[str, str]:
+    def fetch(self, url: str, format: str = "auto") -> Tuple[str, str, Dict[str, str]]:
         """
         Fetch paper content in specified format
         
@@ -228,28 +304,29 @@ class ArxivFetcher:
             format: "html", "pdf", "source", or "auto" (tries html, then pdf)
             
         Returns:
-            Tuple of (content, format_used)
+            Tuple of (content, format_used, image_mapping)
         """
         if format == "auto":
             # Try HTML first (usually cleaner text)
             try:
-                content = self.fetch_html(url)
-                return content, "html"
+                html_content, image_mapping = self.fetch_html(url)
+                return html_content, "html", image_mapping
             except Exception as e:
                 print(f"HTML fetch failed: {e}, trying PDF...")
                 try:
                     content = self.fetch_pdf(url)
-                    return content, "pdf"
+                    return content, "pdf", {}
                 except Exception as e:
                     print(f"PDF fetch failed: {e}, trying source...")
                     content = self.fetch_source(url)
-                    return content, "source"
+                    return content, "source", {}
         
         elif format == "html":
-            return self.fetch_html(url), "html"
+            html_content, image_mapping = self.fetch_html(url)
+            return html_content, "html", image_mapping
         elif format == "pdf":
-            return self.fetch_pdf(url), "pdf"
+            return self.fetch_pdf(url), "pdf", {}
         elif format == "source":
-            return self.fetch_source(url), "source"
+            return self.fetch_source(url), "source", {}
         else:
             raise ValueError(f"Unknown format: {format}")

@@ -77,11 +77,15 @@ def main():
     if not args.output:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         extension = "html" if args.format == "html" else "pdf"
-        args.output = os.path.join("output", f"paper_summary_{timestamp}.{extension}")
+        # Create a folder for this paper
+        paper_folder = os.path.join("output", f"paper_{timestamp}")
+        args.output = os.path.join(paper_folder, f"summary.{extension}")
     else:
         # If output is provided without directory, put it in output/
         if not os.path.dirname(args.output):
             args.output = os.path.join("output", args.output)
+        # Extract paper folder from output path
+        paper_folder = os.path.dirname(args.output)
     
     # Ensure output directory exists
     os.makedirs(os.path.dirname(args.output), exist_ok=True)
@@ -98,9 +102,11 @@ def main():
             
             if args.input_type == 'arxiv':
                 print(f"Fetching paper from {args.input}...")
-                fetcher = ArxivFetcher()
-                content, format_used = fetcher.fetch(args.input, args.fetch_format)
+                fetcher = ArxivFetcher(output_dir=paper_folder)
+                content, format_used, image_mapping = fetcher.fetch(args.input, args.fetch_format)
                 print(f"Successfully fetched paper using {format_used} format")
+                if image_mapping:
+                    print(f"Downloaded {len(image_mapping)} images")
             elif args.input_type == 'url':
                 print(f"Fetching content from {args.input}...")
                 _, content = image_processor.process_html(args.input)
@@ -111,7 +117,11 @@ def main():
             # Extract information using LLM
             print(f"Extracting paper information using OpenAI...")
             extractor = OpenAIExtractor(model=args.model, base_url=args.openai_base_url)
-            extracted_data = extractor.extract(content, language=args.lang)
+            # Pass format type if we used arxiv
+            if args.input_type == 'arxiv':
+                extracted_data = extractor.extract(content, language=args.lang, format_type=format_used)
+            else:
+                extracted_data = extractor.extract(content, language=args.lang)
             
             if "error" in extracted_data:
                 print(f"Error during extraction: {extracted_data['error']}")
@@ -119,7 +129,7 @@ def main():
             
             # Save JSON if requested
             if args.save_json:
-                json_filename = args.output.replace(f'.{args.format}', '.json')
+                json_filename = os.path.join(paper_folder, 'extracted_data.json')
                 with open(json_filename, 'w', encoding='utf-8') as f:
                     json.dump(extracted_data, f, ensure_ascii=False, indent=2)
                 print(f"Saved extracted data to {json_filename}")
@@ -127,7 +137,11 @@ def main():
         # Generate output file
         if args.format == "html":
             print(f"Generating HTML: {args.output}...")
-            generator = HTMLGenerator()
+            # Pass image mapping if we have it from arxiv fetch
+            if args.input_type == 'arxiv' and 'image_mapping' in locals():
+                generator = HTMLGenerator(output_dir=paper_folder, image_mapping=image_mapping)
+            else:
+                generator = HTMLGenerator(output_dir=paper_folder)
             generator.generate(extracted_data, args.output)
         else:
             print(f"Generating PDF: {args.output}...")

@@ -11,8 +11,12 @@ import requests
 class HTMLGenerator:
     """Generate beautiful HTML from extracted paper data matching the draft design"""
     
-    def __init__(self):
+    def __init__(self, output_dir=None, image_mapping=None):
         self.template = self._get_template()
+        self.output_dir = output_dir
+        self.image_folder = None
+        self.image_mapping = image_mapping or {}  # Maps URLs to local paths
+        self.image_counter = 0
     
     def _get_template(self) -> str:
         """Get the HTML template with embedded CSS"""
@@ -187,6 +191,14 @@ class HTMLGenerator:
             color: #4a5568;
         }}
         
+        .content-box strong {{
+            font-weight: 600;
+            color: #2d3748;
+            background-color: rgba(254, 235, 200, 0.4);
+            padding: 2px 4px;
+            border-radius: 3px;
+        }}
+        
         .background-subs {{
             display: flex;
             flex-direction: column;
@@ -345,7 +357,7 @@ class HTMLGenerator:
         backgrounds = data.get('background', [])
         if not backgrounds: return ''
         html = '<div class="section background-section"><div class="section-header">Background</div>'
-        for bg in backgrounds:
+        for i, bg in enumerate(backgrounds, 1):
             # Check if there's only one subsection - if so, merge it with parent
             subsections = bg.get('subsections', [])
             if len(subsections) == 1:
@@ -359,7 +371,7 @@ class HTMLGenerator:
                 html += f'''
                 <div class="background-item">
                     <div class="content-box background-main">
-                        <h3>{bg.get("title", "Background")}</h3>
+                        <h3>B{i}. {bg.get("title", "Background")}</h3>
                         <p>{merged_content}</p>
                     </div>
                 </div>'''
@@ -368,15 +380,15 @@ class HTMLGenerator:
                 html += f'''
                 <div class="background-item">
                     <div class="content-box background-main">
-                        <h3>{bg.get("title", "Background")}</h3>
+                        <h3>B{i}. {bg.get("title", "Background")}</h3>
                         <p>{bg.get("content", "")}</p>
                     </div>'''
                 if subsections and len(subsections) > 1:
                     html += '<div class="background-subs">'
-                    for sub in subsections:
+                    for j, sub in enumerate(subsections, 1):
                         html += f'''
                         <div class="background-sub">
-                            <h4>{sub.get("title", "")}</h4>
+                            <h4>B{i}.{j} {sub.get("title", "")}</h4>
                             <p>{sub.get("content", "")}</p>
                         </div>'''
                     html += '</div>'
@@ -388,17 +400,25 @@ class HTMLGenerator:
         contributions = data.get('contributions', [])
         if not contributions: return ''
         html = '<div class="section contribution-section"><div class="section-header">Contributions</div>'
-        for contrib in contributions:
+        for i, contrib in enumerate(contributions, 1):
             # Extract title and content if contribution is a dict
             if isinstance(contrib, dict):
                 title = contrib.get('title', 'Contribution')
                 content = contrib.get('content', '')
-                html += f'<div class="content-box contribution-item"><h3>{title}</h3><p>{content}</p></div>'
+                # Convert markdown bold to HTML
+                content = self._convert_markdown_bold(content)
+                html += f'<div class="content-box contribution-item"><h3>C{i}. {title}</h3><p>{content}</p></div>'
             else:
                 # Legacy format - just the contribution text
-                html += f'<div class="content-box contribution-item"><p>{contrib}</p></div>'
+                content = self._convert_markdown_bold(contrib)
+                html += f'<div class="content-box contribution-item"><h3>C{i}. Contribution</h3><p>{content}</p></div>'
         html += '</div>'
         return html
+    
+    def _convert_markdown_bold(self, text: str) -> str:
+        """Convert markdown bold **text** to HTML <strong>text</strong>"""
+        import re
+        return re.sub(r'\*\*([^*]+)\*\*', r'<strong>\1</strong>', text)
 
     def _create_method_section(self, data: Dict[str, Any]) -> str:
         method = data.get('method', {})
@@ -416,9 +436,9 @@ class HTMLGenerator:
         figures = method.get('figures', [])
         if figures:
             html += '<div class="method-figures"><h4>Figures & Algorithms</h4>'
-            for fig in figures:
+            for i, fig in enumerate(figures):
                 if isinstance(fig, dict) and 'url' in fig and 'caption' in fig:
-                    html += self._create_figure_html(fig['url'], fig['caption'])
+                    html += self._create_figure_html(fig['url'], fig['caption'], figure_id=i+1)
                 else:
                     html += f'<p>{fig}</p>'
             html += '</div>'
@@ -447,28 +467,84 @@ class HTMLGenerator:
         # Add tables
         tables = results.get('tables', [])
         if tables:
-            for table in tables:
+            for i, table in enumerate(tables):
                 if isinstance(table, dict) and 'url' in table and 'caption' in table:
-                    html += self._create_figure_html(table['url'], table['caption'])
+                    html += self._create_figure_html(table['url'], table['caption'], figure_id=100+i)
         
         # Add result figures
         figures = results.get('figures', [])
         if figures:
-            for fig in figures:
+            for i, fig in enumerate(figures):
                 if isinstance(fig, dict) and 'url' in fig and 'caption' in fig:
-                    html += self._create_figure_html(fig['url'], fig['caption'])
+                    html += self._create_figure_html(fig['url'], fig['caption'], figure_id=200+i)
             
         html += '</div>'
         return html
 
-    def _create_figure_html(self, image_url: str, caption: str) -> str:
+    def _create_figure_html(self, image_url: str, caption: str, figure_id: int = 0) -> str:
         """Generate HTML for an embedded image from a URL or local path."""
+        import re
+        import shutil
+        
         try:
+            # First check if this image was already downloaded during fetch
+            if image_url in self.image_mapping:
+                source_path = self.image_mapping[image_url]
+                if os.path.exists(source_path) and self.image_folder:
+                    # Copy to our output folder with proper naming
+                    fig_match = re.search(r'Figure\s+(\d+)', caption, re.IGNORECASE)
+                    table_match = re.search(r'Table\s+(\d+)', caption, re.IGNORECASE)
+                    
+                    if fig_match:
+                        fig_num = fig_match.group(1)
+                        ext = os.path.splitext(source_path)[1]
+                        img_filename = f"figure_{fig_num}{ext}"
+                    elif table_match:
+                        table_num = table_match.group(1)
+                        ext = os.path.splitext(source_path)[1]
+                        img_filename = f"table_{table_num}{ext}"
+                    else:
+                        self.image_counter += 1
+                        ext = os.path.splitext(source_path)[1]
+                        img_filename = f"image_{self.image_counter}{ext}"
+                    
+                    dest_path = os.path.join(self.image_folder, img_filename)
+                    if source_path != dest_path:  # Don't copy if already in right place
+                        shutil.copy2(source_path, dest_path)
+                    
+                    img_src = f"images/{img_filename}"
+                    return f'''
+            <figure class="paper-figure">
+                <img src="{img_src}" alt="{caption}">
+                <figcaption>{caption}</figcaption>
+            </figure>'''
+            
+            # If not in mapping, try to download (backward compatibility)
             if image_url.startswith(('http://', 'https://')):
                 response = requests.get(image_url)
                 response.raise_for_status()
-                img_data = base64.b64encode(response.content).decode("utf-8")
-                img_src = f"data:image/png;base64,{img_data}"
+                img_data = response.content
+                
+                # Save image to the images folder
+                if self.image_folder:
+                    # Extract figure number from caption if possible
+                    fig_match = re.search(r'Figure\s+(\d+)', caption, re.IGNORECASE)
+                    if fig_match:
+                        fig_num = fig_match.group(1)
+                        img_filename = f"figure_{fig_num}.png"
+                    else:
+                        img_filename = f"image_{figure_id}.png"
+                    
+                    img_path = os.path.join(self.image_folder, img_filename)
+                    with open(img_path, 'wb') as f:
+                        f.write(img_data)
+                    
+                    # Use relative path in HTML
+                    img_src = f"images/{img_filename}"
+                else:
+                    # Fallback to base64 encoding
+                    img_data_b64 = base64.b64encode(img_data).decode("utf-8")
+                    img_src = f"data:image/png;base64,{img_data_b64}"
             else:
                 # Handle local file paths (e.g., images/fig1.png)
                 import os
@@ -482,18 +558,32 @@ class HTMLGenerator:
                 file_found = False
                 for path in possible_paths:
                     if os.path.exists(path):
-                        with open(path, "rb") as f:
-                            img_data = base64.b64encode(f.read()).decode("utf-8")
-                            # Detect image type from extension
-                            ext = os.path.splitext(path)[1].lower()
-                            mime_type = {
-                                '.png': 'image/png',
-                                '.jpg': 'image/jpeg',
-                                '.jpeg': 'image/jpeg',
-                                '.gif': 'image/gif',
-                                '.svg': 'image/svg+xml'
-                            }.get(ext, 'image/png')
-                            img_src = f"data:{mime_type};base64,{img_data}"
+                        if self.image_folder:
+                            # Copy to images folder
+                            fig_match = re.search(r'Figure\s+(\d+)', caption, re.IGNORECASE)
+                            if fig_match:
+                                fig_num = fig_match.group(1)
+                                img_filename = f"figure_{fig_num}{os.path.splitext(path)[1]}"
+                            else:
+                                img_filename = f"image_{figure_id}{os.path.splitext(path)[1]}"
+                            
+                            img_dest = os.path.join(self.image_folder, img_filename)
+                            shutil.copy2(path, img_dest)
+                            img_src = f"images/{img_filename}"
+                        else:
+                            # Fallback to base64
+                            with open(path, "rb") as f:
+                                img_data = base64.b64encode(f.read()).decode("utf-8")
+                                # Detect image type from extension
+                                ext = os.path.splitext(path)[1].lower()
+                                mime_type = {
+                                    '.png': 'image/png',
+                                    '.jpg': 'image/jpeg',
+                                    '.jpeg': 'image/jpeg',
+                                    '.gif': 'image/gif',
+                                    '.svg': 'image/svg+xml'
+                                }.get(ext, 'image/png')
+                                img_src = f"data:{mime_type};base64,{img_data}"
                         file_found = True
                         break
                 
@@ -512,6 +602,12 @@ class HTMLGenerator:
 
     def generate(self, data: Dict[str, Any], output_path: str):
         """Generate HTML from extracted data"""
+        # Setup image folder if output directory is available
+        if self.output_dir or os.path.dirname(output_path):
+            paper_dir = self.output_dir or os.path.dirname(output_path)
+            self.image_folder = os.path.join(paper_dir, 'images')
+            os.makedirs(self.image_folder, exist_ok=True)
+        
         sections = [
             self._create_title_section(data),
             self._create_abstract_section(data),

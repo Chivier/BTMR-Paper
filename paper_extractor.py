@@ -51,16 +51,35 @@ class OpenAIExtractor(LLMExtractor):
             print(f"Error during summarization: {e}")
             return text # Fallback to original text
 
-    def extract(self, paper_content: str, language: str = "en") -> Dict[str, Any]:
-        prompt = f"""Please extract the following information from this academic paper. Be comprehensive and extract ALL relevant figures and tables, especially in the Method and Results sections.
+    def extract(self, paper_content: str, language: str = "en", format_type: str = "text") -> Dict[str, Any]:
+        prompt = f"""Please extract the following information from this academic paper. Be comprehensive and detailed.
 
 1. **Paper Title**: The main title of the paper.
 2. **Authors**: A single string with all authors separated by commas.
-3. **Abstract**: The paper's abstract.
-4. **Background**: Extract main background topics with descriptive titles (e.g., "LLM inference and its key constraint"). Each should have a brief title (under 10 words) that summarizes the topic.
-5. **Contributions**: Extract the main contributions. For each contribution, provide a brief title (under 10 words) and detailed content.
-6. **Method**: Detailed methodology description. IMPORTANT: Find and include ALL figures showing the approach, architecture, algorithms, or method diagrams.
-7. **Results**: Comprehensive results. IMPORTANT: Find and include ALL tables, charts, and result figures.
+3. **Abstract**: Extract the FULL paper abstract. Keep it comprehensive (200-400 words), preserving all key points, motivation, approach, and results.
+4. **Background**: Extract main background topics in blog-style writing. Each topic should have:
+   - A descriptive title (e.g., "The computational challenge of LLM inference")
+   - Clear, engaging content written in accessible language
+   - Use concrete examples and avoid overly technical jargon
+   - Keep content concise but informative (100-200 words per section)
+5. **Contributions**: Extract main contributions with:
+   - Clear, descriptive titles
+   - For each contribution, highlight key metrics and numbers using **bold** markdown
+   - Example: "Achieved **15x speedup** over baseline with **99.5% accuracy**"
+   - Focus on concrete achievements and quantifiable improvements
+6. **Method**: Provide DETAILED methodology description including:
+   - Overall approach and architecture
+   - Key algorithms and techniques
+   - Implementation details
+   - System design choices
+   - IMPORTANT: Find and include ALL figures showing the approach, architecture, algorithms, or method diagrams
+7. **Results**: Comprehensive results including:
+   - Detailed evaluation metrics
+   - Comparisons with baselines
+   - Performance analysis
+   - IMPORTANT: Find and include ALL tables, charts, and result figures
+
+{"The paper content is in HTML format. Extract images by looking for <img> tags." if format_type == "html" else ""}
 
 Paper content:
 {paper_content[:15000]}
@@ -135,18 +154,19 @@ IMPORTANT:
         try:
             extracted_data = json.loads(response.choices[0].message.content)
 
-            # Summarize long fields
-            if "abstract" in extracted_data:
-                extracted_data["abstract"] = self._summarize_text(extracted_data["abstract"])
+            # Don't summarize abstract anymore - keep it longer
+            # if "abstract" in extracted_data:
+            #     extracted_data["abstract"] = self._summarize_text(extracted_data["abstract"])
             
+            # Keep background content more detailed, only summarize if very long
             if "background" in extracted_data:
                 for item in extracted_data["background"]:
-                    if "content" in item:
-                        item["content"] = self._summarize_text(item["content"])
+                    if "content" in item and len(item["content"]) > 300:
+                        item["content"] = self._summarize_text(item["content"], max_length=250)
                     if "subsections" in item:
                         for sub_item in item["subsections"]:
-                            if "content" in sub_item:
-                                sub_item["content"] = self._summarize_text(sub_item["content"])
+                            if "content" in sub_item and len(sub_item["content"]) > 300:
+                                sub_item["content"] = self._summarize_text(sub_item["content"], max_length=250)
             
             # Translate to Chinese if requested
             if language == "zh":
