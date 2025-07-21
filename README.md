@@ -258,7 +258,7 @@ python tests/check_final_improvements.py
 
 ## License
 
-MIT License
+AGPL-3.0 License (see [LICENSE](LICENSE))
 
 ## Acknowledgments
 
