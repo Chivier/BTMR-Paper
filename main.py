@@ -97,8 +97,9 @@ def main():
             with open(args.load_json, 'r', encoding='utf-8') as f:
                 extracted_data = json.load(f)
         else:
-            image_processor = ImageProcessor(output_dir='images')
+            image_processor = ImageProcessor(output_dir=os.path.join(paper_folder, 'images'))
             content = ""
+            image_mapping = {}
             
             if args.input_type == 'arxiv':
                 print(f"Fetching paper from {args.input}...")
@@ -109,19 +110,19 @@ def main():
                     print(f"Downloaded {len(image_mapping)} images")
             elif args.input_type == 'url':
                 print(f"Fetching content from {args.input}...")
-                _, content = image_processor.process_html(args.input)
+                _, content, image_mapping = image_processor.process_html(args.input)
             elif args.input_type == 'md':
                 print(f"Processing markdown file {args.input}...")
-                content = image_processor.process_markdown(args.input)
+                content, image_mapping = image_processor.process_markdown(args.input)
 
             # Extract information using LLM
             print(f"Extracting paper information using OpenAI...")
             extractor = OpenAIExtractor(model=args.model, base_url=args.openai_base_url)
-            # Pass format type if we used arxiv
+            # Pass format type and image mapping if we used arxiv
             if args.input_type == 'arxiv':
-                extracted_data = extractor.extract(content, language=args.lang, format_type=format_used)
+                extracted_data = extractor.extract(content, language=args.lang, format_type=format_used, image_mapping=image_mapping)
             else:
-                extracted_data = extractor.extract(content, language=args.lang)
+                extracted_data = extractor.extract(content, language=args.lang, image_mapping=image_mapping)
             
             if "error" in extracted_data:
                 print(f"Error during extraction: {extracted_data['error']}")
@@ -137,8 +138,8 @@ def main():
         # Generate output file
         if args.format == "html":
             print(f"Generating HTML: {args.output}...")
-            # Pass image mapping if we have it from arxiv fetch
-            if args.input_type == 'arxiv' and 'image_mapping' in locals():
+            # Pass image mapping if we have it
+            if 'image_mapping' in locals() and image_mapping:
                 generator = HTMLGenerator(output_dir=paper_folder, image_mapping=image_mapping)
             else:
                 generator = HTMLGenerator(output_dir=paper_folder)

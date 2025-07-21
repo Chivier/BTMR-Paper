@@ -158,18 +158,6 @@ class HTMLGenerator:
 
         .content-box + .content-box {{
             margin-top: 20px;
-            padding-top: 20px;
-            position: relative;
-        }}
-
-        .content-box + .content-box::before {{
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -25px;
-            right: 0;
-            height: 1px;
-            background: #e2e8f0;
         }}
 
         .abstract-content {{ border-left-color: var(--color-abstract); }}
@@ -197,6 +185,30 @@ class HTMLGenerator:
             background-color: rgba(254, 235, 200, 0.4);
             padding: 2px 4px;
             border-radius: 3px;
+        }}
+        
+        .result-table {{
+            width: 100%;
+            margin: 15px 0;
+            border-collapse: collapse;
+            font-size: 0.9em;
+        }}
+        
+        .result-table th {{
+            background-color: #f7fafc;
+            border: 1px solid #e2e8f0;
+            padding: 8px 12px;
+            text-align: left;
+            font-weight: 600;
+        }}
+        
+        .result-table td {{
+            border: 1px solid #e2e8f0;
+            padding: 8px 12px;
+        }}
+        
+        .result-table tr:nth-child(even) {{
+            background-color: #f9fafb;
         }}
         
         .background-subs {{
@@ -329,15 +341,17 @@ class HTMLGenerator:
     def _create_title_section(self, data: Dict[str, Any]) -> str:
         title = data.get('title', 'Untitled Paper')
         authors = data.get('authors', [])
-        if isinstance(authors, str):
-            # Handle string format: "Author1, Author2, et al."
-            authors = authors
-        elif isinstance(authors, list):
-            # Handle list format: join with commas
-            authors = ', '.join(authors)
         
-        # Create single author tag with all authors
-        authors_html = f'<span class="author-tag">{authors}</span>' if authors else ''
+        # Handle both string and list formats
+        if isinstance(authors, str):
+            # Split string format by comma
+            authors = [a.strip() for a in authors.split(',') if a.strip()]
+        
+        # Create individual author tags
+        authors_html = ''
+        if authors:
+            author_tags = [f'<span class="author-tag">{author}</span>' for author in authors]
+            authors_html = '\n'.join(author_tags)
 
         return f'''
         <div class="section title-section">
@@ -348,6 +362,8 @@ class HTMLGenerator:
     def _create_abstract_section(self, data: Dict[str, Any]) -> str:
         abstract = data.get('abstract', '')
         if not abstract: return ''
+        # Convert markdown bold to HTML
+        abstract = self._convert_markdown_bold(abstract)
         html = '<div class="section abstract-section"><div class="section-header">Abstract</div>'
         html += f'<div class="content-box abstract-content"><p>{abstract}</p></div>'
         html += '</div>'
@@ -372,7 +388,7 @@ class HTMLGenerator:
                 <div class="background-item">
                     <div class="content-box background-main">
                         <h3>B{i}. {bg.get("title", "Background")}</h3>
-                        <p>{merged_content}</p>
+                        <p>{self._convert_markdown_bold(merged_content)}</p>
                     </div>
                 </div>'''
             else:
@@ -381,7 +397,7 @@ class HTMLGenerator:
                 <div class="background-item">
                     <div class="content-box background-main">
                         <h3>B{i}. {bg.get("title", "Background")}</h3>
-                        <p>{bg.get("content", "")}</p>
+                        <p>{self._convert_markdown_bold(bg.get("content", ""))}</p>
                     </div>'''
                 if subsections and len(subsections) > 1:
                     html += '<div class="background-subs">'
@@ -389,7 +405,7 @@ class HTMLGenerator:
                         html += f'''
                         <div class="background-sub">
                             <h4>B{i}.{j} {sub.get("title", "")}</h4>
-                            <p>{sub.get("content", "")}</p>
+                            <p>{self._convert_markdown_bold(sub.get("content", ""))}</p>
                         </div>'''
                     html += '</div>'
                 html += '</div>'
@@ -419,29 +435,89 @@ class HTMLGenerator:
         """Convert markdown bold **text** to HTML <strong>text</strong>"""
         import re
         return re.sub(r'\*\*([^*]+)\*\*', r'<strong>\1</strong>', text)
+    
+    def _convert_markdown_table(self, text: str) -> str:
+        """Convert markdown tables to HTML tables"""
+        import re
+        
+        # Find markdown tables
+        table_pattern = r'(\|[^\n]+\|\n)(\|[-:\s|]+\|\n)((?:\|[^\n]+\|\n)+)'
+        
+        def convert_table(match):
+            header = match.group(1)
+            separator = match.group(2)
+            body = match.group(3)
+            
+            # Parse header
+            header_cells = [cell.strip() for cell in header.strip('|').split('|')]
+            
+            # Parse body rows
+            body_rows = []
+            for row in body.strip().split('\n'):
+                if row:
+                    cells = [self._convert_markdown_bold(cell.strip()) for cell in row.strip('|').split('|')]
+                    body_rows.append(cells)
+            
+            # Build HTML table
+            html = '<table class="result-table">\n<thead>\n<tr>\n'
+            for cell in header_cells:
+                html += f'<th>{self._convert_markdown_bold(cell)}</th>\n'
+            html += '</tr>\n</thead>\n<tbody>\n'
+            
+            for row in body_rows:
+                html += '<tr>\n'
+                for cell in row:
+                    html += f'<td>{cell}</td>\n'
+                html += '</tr>\n'
+            
+            html += '</tbody>\n</table>'
+            return html
+        
+        return re.sub(table_pattern, convert_table, text, flags=re.MULTILINE)
 
     def _create_method_section(self, data: Dict[str, Any]) -> str:
         method = data.get('method', {})
         if not method: return ''
         html = '<div class="section method-section"><div class="section-header">Method</div>'
-        if method.get('description'):
-            html += f'<div class="content-box method-content"><p>{method["description"]}</p></div>'
         
-        if method.get('key_points'):
-            html += '<div class="method-points"><h4>Key Points:</h4><ul>'
-            for point in method['key_points']:
-                html += f'<li>{point}</li>'
-            html += '</ul></div>'
+        # Overall description if available
+        if method.get('description'):
+            html += f'<div class="content-box method-content"><p>{self._convert_markdown_bold(method["description"])}</p></div>'
+        
+        # Check for new subsections structure
+        if method.get('subsections'):
+            for subsection in method['subsections']:
+                html += f'<div class="content-box method-content">'
+                html += f'<h3>{subsection.get("title", "")}</h3>'
+                html += f'<p>{self._convert_markdown_bold(subsection.get("content", ""))}</p>'
+                
+                # Add figures immediately after the related content
+                subsection_figures = subsection.get('figures', [])
+                for fig in subsection_figures:
+                    if isinstance(fig, dict) and fig.get('url') and "(Not available" not in fig['url']:
+                        html += self._create_figure_html(fig['url'], fig['caption'])
+                
+                html += '</div>'
+        else:
+            # Fallback to old structure
+            if method.get('key_points'):
+                html += '<div class="method-points"><h4>Key Points:</h4><ul>'
+                for point in method['key_points']:
+                    html += f'<li>{self._convert_markdown_bold(point)}</li>'
+                html += '</ul></div>'
 
-        figures = method.get('figures', [])
-        if figures:
-            html += '<div class="method-figures"><h4>Figures & Algorithms</h4>'
-            for i, fig in enumerate(figures):
-                if isinstance(fig, dict) and 'url' in fig and 'caption' in fig:
-                    html += self._create_figure_html(fig['url'], fig['caption'], figure_id=i+1)
-                else:
-                    html += f'<p>{fig}</p>'
-            html += '</div>'
+            figures = method.get('figures', [])
+            if figures:
+                html += '<div class="method-figures"><h4>Figures & Algorithms</h4>'
+                for i, fig in enumerate(figures):
+                    if isinstance(fig, dict) and 'url' in fig and 'caption' in fig:
+                        if fig['url'] and "(Not available" not in fig['url']:
+                            html += self._create_figure_html(fig['url'], fig['caption'], figure_id=i+1)
+                        else:
+                            print(f"Skipping invalid figure URL in method: {fig.get('url', 'None')}")
+                    else:
+                        html += f'<p>{fig}</p>'
+                html += '</div>'
 
         html += '</div>'
         return html
@@ -451,32 +527,66 @@ class HTMLGenerator:
         if not results: return ''
         html = '<div class="section result-section"><div class="section-header">Results</div>'
         
-        if results.get('evaluation'):
-            html += f'<div class="content-box result-content"><p>{results["evaluation"]}</p></div>'
+        # Check for new subsections structure
+        if results.get('subsections'):
+            for subsection in results['subsections']:
+                html += f'<div class="content-box result-content">'
+                html += f'<h3>{subsection.get("title", "")}</h3>'
+                html += f'<p>{self._convert_markdown_bold(subsection.get("content", ""))}</p>'
+                
+                # Add figures immediately after the related content
+                subsection_figures = subsection.get('figures', [])
+                for fig in subsection_figures:
+                    if isinstance(fig, dict) and fig.get('url') and "(Not available" not in fig['url']:
+                        html += self._create_figure_html(fig['url'], fig['caption'])
+                
+                html += '</div>'
+        else:
+            # Fallback to old structure
+            if results.get('evaluation'):
+                evaluation = results["evaluation"]
+                if "details not specified" not in evaluation.lower():
+                    evaluation = self._convert_markdown_table(evaluation)
+                    evaluation = self._convert_markdown_bold(evaluation)
+                    html += f'<div class="content-box result-content">{evaluation}</div>'
+            
+            # Add result figures after evaluation
+            figures = results.get('figures', [])
+            if figures:
+                for i, fig in enumerate(figures):
+                    if isinstance(fig, dict) and 'url' in fig and 'caption' in fig:
+                        if fig['url'] and "(Not available" not in fig['url']:
+                            html += self._create_figure_html(fig['url'], fig['caption'], figure_id=200+i)
+                        else:
+                            print(f"Skipping invalid figure URL in results: {fig.get('url', 'None')}")
         
-        # Add other result details if present
+        # Always show these sections regardless of structure
         if results.get('baseline'):
-            html += f'<div class="content-box result-content"><h4>Baseline Comparison</h4><p>{results["baseline"]}</p></div>'
+            baseline = results["baseline"]
+            if "details not specified" not in baseline.lower():
+                html += f'<div class="content-box result-content"><h4>Baseline Comparison</h4><p>{self._convert_markdown_bold(baseline)}</p></div>'
         
         if results.get('datasets'):
-            html += f'<div class="content-box result-content"><h4>Datasets</h4><p>{results["datasets"]}</p></div>'
+            datasets = results["datasets"]
+            if "details not specified" not in datasets.lower():
+                html += f'<div class="content-box result-content"><h4>Datasets</h4><p>{self._convert_markdown_bold(datasets)}</p></div>'
         
         if results.get('experimental_setup'):
-            html += f'<div class="content-box result-content"><h4>Experimental Setup</h4><p>{results["experimental_setup"]}</p></div>'
+            setup = results["experimental_setup"]
+            if "details not specified" not in setup.lower():
+                html += f'<div class="content-box result-content"><h4>Experimental Setup</h4><p>{self._convert_markdown_bold(setup)}</p></div>'
 
         # Add tables
         tables = results.get('tables', [])
         if tables:
+            html += '<div class="content-box result-content"><h4>Tables</h4>'
             for i, table in enumerate(tables):
                 if isinstance(table, dict) and 'url' in table and 'caption' in table:
-                    html += self._create_figure_html(table['url'], table['caption'], figure_id=100+i)
-        
-        # Add result figures
-        figures = results.get('figures', [])
-        if figures:
-            for i, fig in enumerate(figures):
-                if isinstance(fig, dict) and 'url' in fig and 'caption' in fig:
-                    html += self._create_figure_html(fig['url'], fig['caption'], figure_id=200+i)
+                    if table['url'] and "(Not available" not in table['url']:
+                        html += self._create_figure_html(table['url'], table['caption'], figure_id=100+i)
+                    else:
+                        print(f"Skipping invalid table URL: {table.get('url', 'None')}")
+            html += '</div>'
             
         html += '</div>'
         return html
@@ -485,34 +595,64 @@ class HTMLGenerator:
         """Generate HTML for an embedded image from a URL or local path."""
         import re
         import shutil
+        import mimetypes
+        
+        # Check if the URL is actually a valid image URL or path
+        if not image_url or "(Not available" in image_url or "placeholder" in image_url.lower():
+            print(f"Warning: Invalid image URL detected: {image_url}")
+            return f'<p><em>[Image not found: {caption}]</em></p>'
         
         try:
             # First check if this image was already downloaded during fetch
             if image_url in self.image_mapping:
-                source_path = self.image_mapping[image_url]
-                if os.path.exists(source_path) and self.image_folder:
-                    # Copy to our output folder with proper naming
-                    fig_match = re.search(r'Figure\s+(\d+)', caption, re.IGNORECASE)
-                    table_match = re.search(r'Table\s+(\d+)', caption, re.IGNORECASE)
+                # Handle both dict format (new) and string format (old)
+                mapping_info = self.image_mapping[image_url]
+                if isinstance(mapping_info, dict):
+                    source_path = image_url  # The key itself is the local path in new format
+                else:
+                    source_path = mapping_info  # Old format: direct path
                     
-                    if fig_match:
-                        fig_num = fig_match.group(1)
-                        ext = os.path.splitext(source_path)[1]
-                        img_filename = f"figure_{fig_num}{ext}"
-                    elif table_match:
-                        table_num = table_match.group(1)
-                        ext = os.path.splitext(source_path)[1]
-                        img_filename = f"table_{table_num}{ext}"
-                    else:
-                        self.image_counter += 1
-                        ext = os.path.splitext(source_path)[1]
-                        img_filename = f"image_{self.image_counter}{ext}"
+                if os.path.exists(source_path):
+                    # Read the image and convert to base64
+                    with open(source_path, "rb") as f:
+                        img_data = base64.b64encode(f.read()).decode("utf-8")
                     
-                    dest_path = os.path.join(self.image_folder, img_filename)
-                    if source_path != dest_path:  # Don't copy if already in right place
-                        shutil.copy2(source_path, dest_path)
+                    # Detect MIME type
+                    mime_type, _ = mimetypes.guess_type(source_path)
+                    if not mime_type:
+                        ext = os.path.splitext(source_path)[1].lower()
+                        mime_type = {
+                            '.png': 'image/png',
+                            '.jpg': 'image/jpeg',
+                            '.jpeg': 'image/jpeg',
+                            '.gif': 'image/gif',
+                            '.svg': 'image/svg+xml'
+                        }.get(ext, 'image/png')
                     
-                    img_src = f"images/{img_filename}"
+                    img_src = f"data:{mime_type};base64,{img_data}"
+                    
+                    # Also save to output folder with proper naming (for reference)
+                    if self.image_folder:
+                        fig_match = re.search(r'Figure\s+(\d+)', caption, re.IGNORECASE)
+                        table_match = re.search(r'Table\s+(\d+)', caption, re.IGNORECASE)
+                        
+                        if fig_match:
+                            fig_num = fig_match.group(1)
+                            ext = os.path.splitext(source_path)[1]
+                            img_filename = f"figure_{fig_num}{ext}"
+                        elif table_match:
+                            table_num = table_match.group(1)
+                            ext = os.path.splitext(source_path)[1]
+                            img_filename = f"table_{table_num}{ext}"
+                        else:
+                            self.image_counter += 1
+                            ext = os.path.splitext(source_path)[1]
+                            img_filename = f"image_{self.image_counter}{ext}"
+                        
+                        dest_path = os.path.join(self.image_folder, img_filename)
+                        if source_path != dest_path:
+                            shutil.copy2(source_path, dest_path)
+                    
                     return f'''
             <figure class="paper-figure">
                 <img src="{img_src}" alt="{caption}">
@@ -539,15 +679,11 @@ class HTMLGenerator:
                     with open(img_path, 'wb') as f:
                         f.write(img_data)
                     
-                    # Use relative path in HTML
-                    img_src = f"images/{img_filename}"
-                else:
-                    # Fallback to base64 encoding
+                    # Always use base64 encoding to ensure portability
                     img_data_b64 = base64.b64encode(img_data).decode("utf-8")
                     img_src = f"data:image/png;base64,{img_data_b64}"
             else:
                 # Handle local file paths (e.g., images/fig1.png)
-                import os
                 # Try multiple possible paths
                 possible_paths = [
                     image_url,  # As-is
@@ -558,32 +694,19 @@ class HTMLGenerator:
                 file_found = False
                 for path in possible_paths:
                     if os.path.exists(path):
-                        if self.image_folder:
-                            # Copy to images folder
-                            fig_match = re.search(r'Figure\s+(\d+)', caption, re.IGNORECASE)
-                            if fig_match:
-                                fig_num = fig_match.group(1)
-                                img_filename = f"figure_{fig_num}{os.path.splitext(path)[1]}"
-                            else:
-                                img_filename = f"image_{figure_id}{os.path.splitext(path)[1]}"
-                            
-                            img_dest = os.path.join(self.image_folder, img_filename)
-                            shutil.copy2(path, img_dest)
-                            img_src = f"images/{img_filename}"
-                        else:
-                            # Fallback to base64
-                            with open(path, "rb") as f:
-                                img_data = base64.b64encode(f.read()).decode("utf-8")
-                                # Detect image type from extension
-                                ext = os.path.splitext(path)[1].lower()
-                                mime_type = {
-                                    '.png': 'image/png',
-                                    '.jpg': 'image/jpeg',
-                                    '.jpeg': 'image/jpeg',
-                                    '.gif': 'image/gif',
-                                    '.svg': 'image/svg+xml'
-                                }.get(ext, 'image/png')
-                                img_src = f"data:{mime_type};base64,{img_data}"
+                        # Always use base64 encoding
+                        with open(path, "rb") as f:
+                            img_data = base64.b64encode(f.read()).decode("utf-8")
+                            # Detect image type from extension
+                            ext = os.path.splitext(path)[1].lower()
+                            mime_type = {
+                                '.png': 'image/png',
+                                '.jpg': 'image/jpeg',
+                                '.jpeg': 'image/jpeg',
+                                '.gif': 'image/gif',
+                                '.svg': 'image/svg+xml'
+                            }.get(ext, 'image/png')
+                            img_src = f"data:{mime_type};base64,{img_data}"
                         file_found = True
                         break
                 

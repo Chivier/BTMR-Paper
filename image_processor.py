@@ -26,10 +26,11 @@ class ImageProcessor:
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(exist_ok=True)
 
-    def process_markdown(self, markdown_path: str) -> str:
+    def process_markdown(self, markdown_path: str) -> Tuple[str, dict]:
+        image_mapping = {}
         if not SURYA_AVAILABLE:
             # Fallback: just return the original markdown content
-            return Path(markdown_path).read_text(encoding='utf-8')
+            return Path(markdown_path).read_text(encoding='utf-8'), image_mapping
             
         det_predictor = DetectionPredictor()
         rec_predictor = RecognitionPredictor()
@@ -48,16 +49,18 @@ class ImageProcessor:
                 
                 # Replace the old image reference with the new local path
                 updated_markdown = updated_markdown.replace(img_references[i], f'![{pred.caption or ""}]({img_path})', 1)
+                image_mapping[img_references[i]] = str(img_path)
 
-        return updated_markdown
+        return updated_markdown, image_mapping
 
-    def process_html(self, url: str) -> Tuple[str, str]:
+    def process_html(self, url: str) -> Tuple[str, str, dict]:
         response = requests.get(url)
         response.raise_for_status()
         soup = BeautifulSoup(response.content, 'html.parser')
         
         title = soup.title.string if soup.title else 'Untitled'
         markdown_content = ''
+        image_mapping = {}
         
         # Download and process images
         img_count = 0
@@ -70,6 +73,7 @@ class ImageProcessor:
                 if local_path:
                     # Replace src with local path
                     img['src'] = str(local_path)
+                    image_mapping[img_url] = str(local_path)
                     img_count += 1
 
         for element in soup.find_all(['h1', 'h2', 'h3', 'p', 'img']):
@@ -93,8 +97,9 @@ class ImageProcessor:
                         
                         alt_text = element.get('alt', '')
                         markdown_content += f'![{alt_text}]({img_path})\n\n'
+                        image_mapping[img_url] = str(img_path)
                     except Exception as e:
                         print(f"Error downloading image {img_url}: {e}")
 
-        return title, markdown_content
+        return title, markdown_content, image_mapping
 

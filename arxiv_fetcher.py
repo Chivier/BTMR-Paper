@@ -4,6 +4,7 @@ ArXiv paper fetcher supporting HTML, PDF, and source formats
 import os
 import re
 import requests
+import json
 from typing import Optional, Tuple, List, Dict
 from urllib.parse import urlparse, urljoin
 from bs4 import BeautifulSoup
@@ -44,8 +45,48 @@ class ArxivFetcher:
         
         return None
     
-    def _download_image(self, img_url: str, base_url: str, img_index: int) -> Optional[str]:
-        """Download an image and return the local path"""
+    def _extract_figure_with_caption(self, figure_elem):
+        """Extract figure element with images and caption information"""
+        figure_data = {
+            'id': figure_elem.get('id', ''),
+            'images': [],
+            'caption': {
+                'tag': '',
+                'text': '',
+                'full_text': ''
+            }
+        }
+        
+        # Extract image information
+        for img in figure_elem.find_all('img'):
+            img_info = {
+                'src': img.get('src', ''),
+                'alt': img.get('alt', ''),
+                'local_path': None
+            }
+            figure_data['images'].append(img_info)
+        
+        # Extract caption information
+        caption_elem = figure_elem.find('figcaption')
+        if caption_elem:
+            # Extract tag (e.g., "Figure 1:" or "Table 1:")
+            tag_elem = caption_elem.find('span', class_='ltx_tag')
+            if tag_elem:
+                figure_data['caption']['tag'] = tag_elem.get_text(strip=True)
+            
+            # Extract full caption text
+            figure_data['caption']['full_text'] = caption_elem.get_text(separator=' ', strip=True)
+            
+            # Extract text without tag
+            caption_text = figure_data['caption']['full_text']
+            if figure_data['caption']['tag']:
+                caption_text = caption_text.replace(figure_data['caption']['tag'], '', 1).strip()
+            figure_data['caption']['text'] = caption_text
+        
+        return figure_data
+    
+    def _download_image(self, img_url: str, base_url: str, img_index: int, caption_info: dict = None) -> Optional[str]:
+        """Download an image and return the local path with caption metadata"""
         try:
             # Skip data URLs
             if img_url.startswith('data:'):
@@ -95,10 +136,10 @@ class ArxivFetcher:
             return None
     
     def fetch_html(self, url: str) -> Tuple[str, Dict[str, str]]:
-        """Fetch HTML version of the paper and download images
+        """Fetch HTML version of the paper and download images with caption information
         
         Returns:
-            Tuple of (html_content_with_modified_img_tags, image_mapping)
+            Tuple of (html_content_with_modified_img_tags, image_mapping_with_captions)
         """
         arxiv_id = self._extract_arxiv_id(url)
         if not arxiv_id:
@@ -118,19 +159,68 @@ class ArxivFetcher:
             # Extract main content
             content = soup.find('div', {'class': 'ltx_page_main'})
             if content:
-                # Download all images
+                # Store enhanced image mapping with captions
+                image_caption_mapping = {}
+                figure_metadata = []
                 img_index = 1
-                for img in content.find_all('img'):
+                
+                # First, process all figures with captions
+                figures = content.find_all('figure', class_='ltx_figure')
+                for figure in figures:
+                    figure_data = self._extract_figure_with_caption(figure)
+                    
+                    # Download images in this figure
+                    for img_info in figure_data['images']:
+                        if img_info['src']:
+                            local_path = self._download_image(img_info['src'], html_url, img_index)
+                            if local_path:
+                                # Update the img tag in the HTML
+                                img_tag = figure.find('img', src=img_info['src'])
+                                if img_tag:
+                                    img_tag['src'] = local_path
+                                
+                                # Store mapping with caption
+                                image_caption_mapping[local_path] = {
+                                    'original_url': img_info['src'],
+                                    'caption': figure_data['caption']['full_text'],
+                                    'caption_tag': figure_data['caption']['tag'],
+                                    'caption_text': figure_data['caption']['text'],
+                                    'figure_id': figure_data['id']
+                                }
+                                img_index += 1
+                    
+                    figure_metadata.append(figure_data)
+                
+                # Also process any standalone images not in figures
+                standalone_imgs = [img for img in content.find_all('img') 
+                                 if not img.find_parent('figure')]
+                for img in standalone_imgs:
                     img_url = img.get('src', '')
                     if img_url:
                         local_path = self._download_image(img_url, html_url, img_index)
                         if local_path:
-                            # Update img tag with local path
                             img['src'] = local_path
+                            # For standalone images, try to find nearby text as caption
+                            image_caption_mapping[local_path] = {
+                                'original_url': img_url,
+                                'caption': img.get('alt', ''),
+                                'caption_tag': '',
+                                'caption_text': img.get('alt', ''),
+                                'figure_id': ''
+                            }
                             img_index += 1
                 
-                # Return HTML string with updated image paths
-                return str(content), self.downloaded_images
+                # Save metadata if output directory exists
+                if self.output_dir:
+                    metadata_path = os.path.join(self.output_dir, 'image_metadata.json')
+                    with open(metadata_path, 'w', encoding='utf-8') as f:
+                        json.dump({
+                            'figures': figure_metadata,
+                            'image_mapping': image_caption_mapping
+                        }, f, ensure_ascii=False, indent=2)
+                
+                # Return HTML string with updated image paths and enhanced mapping
+                return str(content), image_caption_mapping
         
         # Fallback to abstract page
         abs_url = f"{self.base_url}/abs/{arxiv_id}"

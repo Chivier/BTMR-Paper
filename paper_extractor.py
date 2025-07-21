@@ -51,43 +51,66 @@ class OpenAIExtractor(LLMExtractor):
             print(f"Error during summarization: {e}")
             return text # Fallback to original text
 
-    def extract(self, paper_content: str, language: str = "en", format_type: str = "text") -> Dict[str, Any]:
+    def extract(self, paper_content: str, language: str = "en", format_type: str = "text", image_mapping: Dict[str, dict] = None) -> Dict[str, Any]:
         prompt = f"""Please extract the following information from this academic paper. Be comprehensive and detailed.
 
 1. **Paper Title**: The main title of the paper.
-2. **Authors**: A single string with all authors separated by commas.
-3. **Abstract**: Extract the FULL paper abstract. Keep it comprehensive (200-400 words), preserving all key points, motivation, approach, and results.
-4. **Background**: Extract main background topics in blog-style writing. Each topic should have:
-   - A descriptive title (e.g., "The computational challenge of LLM inference")
-   - Clear, engaging content written in accessible language
-   - Use concrete examples and avoid overly technical jargon
-   - Keep content concise but informative (100-200 words per section)
+2. **Authors**: List of authors as an array of strings, one per author.
+3. **Abstract**: Extract a CONCISE summary of the paper (100-150 words). Focus on the core problem, approach, and key results. Use **bold** markdown to highlight important metrics and achievements.
+4. **Background**: Extract main background topics with:
+   - Blog-style writing with descriptive titles
+   - Use **bold** markdown to highlight key concepts, challenges, and important facts
+   - Keep content concise (100-150 words per section)
+   - Remove any "(details not specified)" or similar placeholder text
 5. **Contributions**: Extract main contributions with:
    - Clear, descriptive titles
-   - For each contribution, highlight key metrics and numbers using **bold** markdown
-   - Example: "Achieved **15x speedup** over baseline with **99.5% accuracy**"
-   - Focus on concrete achievements and quantifiable improvements
-6. **Method**: Provide DETAILED methodology description including:
-   - Overall approach and architecture
-   - Key algorithms and techniques
-   - Implementation details
-   - System design choices
-   - IMPORTANT: Find and include ALL figures showing the approach, architecture, algorithms, or method diagrams
-7. **Results**: Comprehensive results including:
-   - Detailed evaluation metrics
-   - Comparisons with baselines
-   - Performance analysis
-   - IMPORTANT: Find and include ALL tables, charts, and result figures
+   - Highlight ALL key metrics, numbers, and achievements using **bold** markdown
+   - Focus on concrete improvements and quantifiable results
+6. **Method**: Detailed methodology with:
+   - Use **bold** to highlight key techniques, algorithms, and design choices
+   - Organize content in logical subsections (e.g., "System Architecture", "Algorithm Design", "Implementation Details")
+   - Place figures IMMEDIATELY AFTER the text that describes them
+   - Include ONLY figures that show HOW the system works (architecture, algorithms, workflows)
+   - Do NOT include performance evaluation figures here
+7. **Results**: Comprehensive results with:
+   - Use **bold** to highlight ALL performance numbers, improvements, and comparisons
+   - Organize by evaluation aspects (e.g., "Performance Comparison", "Scalability Analysis", "Energy Efficiency")
+   - Place figures IMMEDIATELY AFTER the related performance discussion
+   - Include ONLY figures that show evaluation results, benchmarks, or comparisons
+   - Include tables with numerical results
+   - Remove any placeholder text like "(details not specified in the provided content)"
 
-{"The paper content is in HTML format. Extract images by looking for <img> tags." if format_type == "html" else ""}
+{"IMPORTANT: The paper content is in HTML format. Look for <img> tags and extract the 'src' attribute value EXACTLY as it appears. These will be paths like 'output/debug_test/images/arxiv_img_1.png'. Extract the EXACT path from src attribute, do NOT modify or create placeholder URLs." if format_type == "html" else ""}
+
+{f'''
+IMAGE CAPTION INFORMATION:
+The following images are available in the paper with their captions:
+{json.dumps(image_mapping, indent=2) if image_mapping else "No caption information available"}
+
+Use the caption information above to correctly classify images:
+- **Method figures**: Should show HOW the system works
+  * Architecture diagrams, system design, framework overview
+  * Algorithm descriptions, workflow diagrams, model structure
+  * Implementation details, parallelism plans, data flow
+  * Technical components (e.g., "PLMR compliance", "parallelism plan")
+- **Result figures**: Should show EVALUATION and PERFORMANCE
+  * Performance comparisons (e.g., "vs", "comparison")
+  * Scalability analysis, benchmark results
+  * Speedup graphs, accuracy charts
+  * Experimental results and evaluations
+- **Tables**: Numerical data, comparisons, specifications
+  * If caption contains "Table", include in results.tables
+  
+IMPORTANT: Each image should appear in ONLY ONE section. For borderline cases like "scalability analysis", prefer results.figures since it shows evaluation outcomes.
+''' if image_mapping else ''}
 
 Paper content:
-{paper_content[:15000]}
+{paper_content[:50000]}
 
 Return the information in this JSON format:
 {{
     "title": "Paper title",
-    "authors": "Author1, Author2, Author3",
+    "authors": ["Author1 Name", "Author2 Name", "Author3 Name"],
     "abstract": "Full abstract text...",
     "background": [
         {{
@@ -106,19 +129,46 @@ Return the information in this JSON format:
     ],
     "method": {{
         "description": "Overall methodology description...",
+        "subsections": [
+            {{
+                "title": "System Architecture",
+                "content": "Description of the architecture...",
+                "figures": [
+                    {{
+                        "url": "ACTUAL image URL",
+                        "caption": "Figure X: Architecture diagram"
+                    }}
+                ]
+            }},
+            {{
+                "title": "Algorithm Design",
+                "content": "Description of algorithms...",
+                "figures": []
+            }}
+        ],
         "key_points": [
             "Key methodological point 1",
             "Key methodological point 2"
-        ],
-        "figures": [
-            {{
-                "url": "ACTUAL image URL from the paper",
-                "caption": "Figure X: Description of what the figure shows"
-            }}
         ]
     }},
     "results": {{
-        "evaluation": "Summary of evaluation results...",
+        "subsections": [
+            {{
+                "title": "Performance Comparison",
+                "content": "Performance comparison results...",
+                "figures": [
+                    {{
+                        "url": "ACTUAL image URL",
+                        "caption": "Figure X: Performance comparison"
+                    }}
+                ]
+            }},
+            {{
+                "title": "Scalability Analysis", 
+                "content": "Scalability analysis results...",
+                "figures": []
+            }}
+        ],
         "baseline": "Baseline comparison details...",
         "datasets": "Datasets used...",
         "experimental_setup": "Experimental setup details...",
@@ -127,22 +177,37 @@ Return the information in this JSON format:
                 "url": "ACTUAL image URL of table",
                 "caption": "Table X: Description of the table contents"
             }}
-        ],
-        "figures": [
-            {{
-                "url": "ACTUAL image URL of result figure",
-                "caption": "Figure X: Result visualization or chart"
-            }}
         ]
     }}
 }}
 
-IMPORTANT: 
-- For figures and tables, extract the ACTUAL URLs from <img> tags in the HTML. Do not use placeholder URLs.
-- Include ALL relevant figures in Method section (architecture diagrams, flowcharts, algorithms)
-- Include ALL tables and result figures in Results section
-- Each background and contribution should have a descriptive title, not just "Background 1" or "Contribution 1"
+IMPORTANT FOR IMAGE EXTRACTION AND CLASSIFICATION:
+1. **Extract images carefully**:
+   - Look for <img> tags in the HTML
+   - Extract the EXACT src attribute value
+   - Look for figure captions near the image (usually in <figcaption> or text like "Figure X:")
+   
+2. **Classify images based on their caption and context**:
+   - **Method figures**: Include in method.figures if caption mentions:
+     * Architecture, system design, framework, model structure
+     * Algorithm, workflow, pipeline, process flow
+     * Component diagram, module organization
+   - **Result figures**: Include in results.figures if caption mentions:
+     * Performance, speedup, throughput, latency
+     * Comparison, evaluation, benchmark results
+     * Graphs, charts, plots showing experimental results
+   - **Tables**: Include in results.tables if it's a table showing:
+     * Numerical comparisons, benchmark results
+     * Performance metrics, evaluation scores
+   
+3. **Avoid duplication**:
+   - Each image should appear ONLY ONCE in the appropriate section
+   - Do NOT include the same image in multiple sections
+   - If an image could fit multiple categories, choose the most relevant one based on its primary purpose
 """
+        
+        # Debug: Print content length
+        print(f"Sending {len(paper_content)} characters to LLM...")
         
         response = self.client.chat.completions.create(
             model=self.model,
@@ -152,21 +217,27 @@ IMPORTANT:
         )
         
         try:
+            # Debug response
+            if not response.choices[0].message.content:
+                print("Warning: LLM returned empty response")
+                print(f"Model used: {self.model}")
+                return {"error": "Empty response from LLM"}
+                
             extracted_data = json.loads(response.choices[0].message.content)
 
             # Don't summarize abstract anymore - keep it longer
             # if "abstract" in extracted_data:
             #     extracted_data["abstract"] = self._summarize_text(extracted_data["abstract"])
             
-            # Keep background content more detailed, only summarize if very long
-            if "background" in extracted_data:
-                for item in extracted_data["background"]:
-                    if "content" in item and len(item["content"]) > 300:
-                        item["content"] = self._summarize_text(item["content"], max_length=250)
-                    if "subsections" in item:
-                        for sub_item in item["subsections"]:
-                            if "content" in sub_item and len(sub_item["content"]) > 300:
-                                sub_item["content"] = self._summarize_text(sub_item["content"], max_length=250)
+            # Don't summarize background content anymore - keep it detailed with highlights
+            # if "background" in extracted_data:
+            #     for item in extracted_data["background"]:
+            #         if "content" in item and len(item["content"]) > 300:
+            #             item["content"] = self._summarize_text(item["content"], max_length=250)
+            #         if "subsections" in item:
+            #             for sub_item in item["subsections"]:
+            #                 if "content" in sub_item and len(sub_item["content"]) > 300:
+            #                     sub_item["content"] = self._summarize_text(sub_item["content"], max_length=250)
             
             # Translate to Chinese if requested
             if language == "zh":
@@ -175,7 +246,7 @@ IMPORTANT:
             return extracted_data
         except Exception as e:
             print(f"Error parsing response: {e}")
-            return {{"error": str(e), "raw_response": response.choices[0].message.content}}
+            return {"error": str(e), "raw_response": response.choices[0].message.content}
     
     def _translate_to_chinese(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Translate extracted data to Chinese using TRANSLATE_MODEL"""
