@@ -131,7 +131,7 @@ class OpenAIExtractor(LLMExtractor):
    - Properly distinguish between figures and tables
    - Remove any placeholder text like "(details not specified in the provided content)"
 
-{"IMPORTANT: The paper content is in HTML format. Look for <img> tags and extract the 'src' attribute value EXACTLY as it appears. These will be paths like 'output/debug_test/images/arxiv_img_1.png'. Extract the EXACT path from src attribute, do NOT modify or create placeholder URLs." if format_type == "html" else ""}
+{"IMPORTANT: The paper content is in HTML format. Look for <img> tags and extract the 'src' attribute value EXACTLY as it appears. These will be local file paths. Extract the EXACT path from src attribute, do NOT modify or create placeholder URLs." if format_type == "html" else ""}
 
 {f'''
 IMAGE CAPTION INFORMATION:

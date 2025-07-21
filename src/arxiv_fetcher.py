@@ -159,6 +159,10 @@ class ArxivFetcher:
             # Skip data URLs
             if img_url.startswith('data:'):
                 return None
+            
+            # Check if this is already a local path (already downloaded)
+            if img_url.startswith(self.output_dir) if self.output_dir else False:
+                return img_url
                 
             # Handle relative URLs
             if not img_url.startswith(('http://', 'https://')):
