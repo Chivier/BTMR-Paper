@@ -16,24 +16,18 @@ The name BTMR is also inspired by the four most important components of academic
 
 ## Installation
 
-### Basic Installation
+### Installation
 ```bash
 # Clone the repository
 git clone https://github.com/yourusername/BTMR.git
 cd BTMR
 
-# Install dependencies (without advanced PDF processing)
-pip install -r requirements-lite.txt
+# Install dependencies (including Surya OCR for better PDF processing)
+pip install -r requirements.txt
 
 # Copy and configure environment variables
 cp .env.example .env
 # Edit .env to add your OPENAI_API_KEY
-```
-
-### Full Installation (with Surya OCR)
-```bash
-# For better PDF processing with Surya OCR
-pip install -r requirements.txt
 ```
 
 ## Quick Start
@@ -43,8 +37,12 @@ pip install -r requirements.txt
 # Generate HTML summary from ArXiv paper
 python main.py https://arxiv.org/abs/2301.12345
 
-# Generate PDF output
+# Generate PDF output (single-page PDF with Playwright engine)
 python main.py https://arxiv.org/abs/2301.12345 --format pdf
+
+# Use different PDF engines
+python main.py https://arxiv.org/abs/2301.12345 --format pdf --pdf-engine reportlab   # Multi-page
+python main.py https://arxiv.org/abs/2301.12345 --format pdf --pdf-engine playwright  # Single page (default)
 
 # Generate Chinese summary
 python main.py https://arxiv.org/abs/2301.12345 --lang zh
@@ -74,20 +72,20 @@ BTMR/
 │   ├── arxiv_fetcher.py     # ArXiv paper fetching logic
 │   ├── paper_extractor.py   # LLM-based information extraction
 │   ├── html_generator.py    # HTML output generation
-│   ├── pdf_generator.py     # PDF output generation
+│   ├── pdf_generator.py     # PDF output generation (ReportLab)
+│   ├── pdf_generator_playwright.py  # PDF generation with Playwright
+│   ├── pdf_generator_weasyprint.py  # PDF generation with WeasyPrint
 │   ├── image_processor.py   # Image extraction and processing
 │   └── metadata_logger.py   # CSV metadata logging
 ├── scripts/                  # Utility scripts
 │   └── cleanup_output.py    # Output directory management
 ├── tests/                    # Test scripts
-│   ├── test_api.py          # API connectivity test
-│   └── check_final_improvements.py  # Image classification checker
+│   └── test_api.py          # API connectivity test
 ├── output/                   # Generated outputs (git-ignored)
 │   ├── paper_YYYYMMDD_HHMMSS/  # Individual paper outputs
 │   └── paper_metadata.csv   # Processing history
 ├── main.py                   # Main entry point
-├── requirements.txt          # Full dependencies
-├── requirements-lite.txt     # Basic dependencies
+├── requirements.txt          # Dependencies
 ├── .env.example             # Environment variables template
 ├── .gitignore               # Git ignore rules
 └── README.md                # This file
@@ -122,12 +120,14 @@ Generates beautiful HTML output:
   - Smart image embedding with base64 encoding
   - Markdown table support
 
-#### pdf_generator.py
-Generates PDF output using ReportLab:
-- **PDFGenerator class**: Creates structured PDF documents
-  - Automatic font detection for Chinese support
-  - Section-based layout with proper formatting
-  - Image inclusion with captions
+#### PDF Generation Modules
+Three PDF generation options:
+- **pdf_generator.py**: Original ReportLab-based generator (multi-page)
+- **pdf_generator_playwright.py**: Playwright-based generator (single long page, default)
+  - Uses real browser engine for perfect HTML-to-PDF fidelity
+  - No system dependencies required
+- **pdf_generator_weasyprint.py**: WeasyPrint-based generator
+  - Good CSS support but requires system libraries
 
 #### image_processor.py
 Handles image extraction and processing:
@@ -226,8 +226,6 @@ output/paper_20240101_120000/
 # Test API connectivity
 python tests/test_api.py
 
-# Check image classification improvements
-python tests/check_final_improvements.py
 ```
 
 ## Example Output
