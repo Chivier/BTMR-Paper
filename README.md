@@ -234,7 +234,7 @@ python tests/check_final_improvements.py
 
 ### WaferLLM (arxiv.org/abs/2502.04563)
 
-![WaferLLM](./example_output/waferllm.png)
+![WaferLLM](./examples/waferllm.png)
 
 ## Troubleshooting
 
