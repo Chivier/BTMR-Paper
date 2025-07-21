@@ -1,11 +1,11 @@
 """
-PDF generator with beautiful template matching the draft style
+PDF generator with beautiful template matching the draft style - single page version
 """
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
-    PageBreak, KeepTogether, Flowable
+    PageBreak, KeepTogether, Flowable, Frame, PageTemplate, BaseDocTemplate
 )
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch, cm
@@ -13,8 +13,12 @@ from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib.colors import HexColor
-from typing import Dict, Any, List
+from reportlab.pdfgen import canvas
+from typing import Dict, Any, List, Tuple
 import os
+import base64
+from io import BytesIO
+from PIL import Image
 
 
 class RoundedBox(Flowable):
@@ -185,29 +189,101 @@ class PDFGenerator:
         
         return elements
     
+    def _calculate_content_height(self, data: Dict[str, Any]) -> float:
+        """Calculate the total height needed for all content"""
+        # Estimate based on content - this is a rough calculation
+        height = 0
+        
+        # Title section
+        height += 150  # Title + authors
+        
+        # Abstract
+        if data.get('abstract') or data.get('chinese_summary'):
+            height += 300
+        
+        # Background sections
+        if 'background' in data and data['background']:
+            for bg in data['background']:
+                height += 150  # Section header
+                if bg.get('content'):
+                    # Estimate text height (roughly 50 chars per line, 15 points per line)
+                    lines = len(bg.get('content', '')) / 50
+                    height += lines * 15
+                if 'subsections' in bg:
+                    height += len(bg['subsections']) * 100
+        
+        # Contributions
+        if 'contributions' in data and data['contributions']:
+            height += 100 + len(data['contributions']) * 80
+        
+        # Method
+        if 'method' in data:
+            height += 300
+            if 'figures' in data['method']:
+                height += len(data['method']['figures']) * 50
+        
+        # Results
+        if 'results' in data:
+            height += 400
+        
+        # Add padding
+        height += 200
+        
+        return max(height, A4[1])  # At least one page height
+    
     def generate(self, data: Dict[str, Any], output_path: str):
-        """Generate PDF from extracted data"""
-        doc = SimpleDocTemplate(
+        """Generate single-page PDF from extracted data"""
+        # Calculate content height
+        content_height = self._calculate_content_height(data)
+        
+        # Create custom page size (A4 width, dynamic height)
+        page_width = A4[0]
+        page_height = content_height
+        
+        # Create a canvas with custom page size
+        c = canvas.Canvas(output_path, pagesize=(page_width, page_height))
+        
+        # Create document with custom page size
+        doc = BaseDocTemplate(
             output_path,
-            pagesize=A4,
-            topMargin=1*inch,
-            bottomMargin=1*inch,
+            pagesize=(page_width, page_height),
+            topMargin=0.5*inch,
+            bottomMargin=0.5*inch,
             leftMargin=0.75*inch,
             rightMargin=0.75*inch
         )
         
+        # Create a frame that spans the entire custom page
+        frame = Frame(
+            doc.leftMargin,
+            doc.bottomMargin,
+            doc.width,
+            doc.height,
+            id='normal'
+        )
+        
+        # Create page template
+        template = PageTemplate(id='SinglePage', frames=frame)
+        doc.addPageTemplates([template])
+        
         story = []
-        page_width = A4[0] - 1.5*inch
+        content_width = page_width - 1.5*inch
         
         # Title section
         title_content = []
         title_content.append(Paragraph(data.get('title', 'Untitled'), 
                                      self.styles['CustomTitle']))
         title_content.append(Spacer(1, 0.1*inch))
-        title_content.append(Paragraph(data.get('authors', 'Unknown'), 
-                                     self.styles['Author']))
         
-        story.extend(self._create_rounded_section("", title_content, page_width))
+        # Handle authors as list
+        authors = data.get('authors', ['Unknown'])
+        if isinstance(authors, list):
+            authors_text = ', '.join(authors)
+        else:
+            authors_text = str(authors)
+        title_content.append(Paragraph(authors_text, self.styles['Author']))
+        
+        story.extend(self._create_rounded_section("", title_content, content_width))
         
         # Abstract & Chinese Summary
         abstract_content = []
@@ -227,7 +303,7 @@ class PDFGenerator:
         
         if abstract_content:
             story.extend(self._create_rounded_section("Abstract & 中文总结", 
-                                                    abstract_content, page_width))
+                                                    abstract_content, content_width))
         
         # Background sections
         if 'background' in data and data['background']:
@@ -271,13 +347,13 @@ class PDFGenerator:
             
             if background_content:
                 story.extend(self._create_rounded_section("Background", 
-                                                        background_content, page_width))
+                                                        background_content, content_width))
         
         # Contributions
         if 'contributions' in data and data['contributions']:
             contribution_elements = self._create_contribution_list(data['contributions'])
             story.extend(self._create_rounded_section("Target/Contribution", 
-                                                    contribution_elements, page_width))
+                                                    contribution_elements, content_width))
         
         # Method section
         if 'method' in data:
@@ -306,7 +382,7 @@ class PDFGenerator:
             
             if method_content:
                 story.extend(self._create_rounded_section("Method", 
-                                                        method_content, page_width))
+                                                        method_content, content_width))
         
         # Results section
         if 'results' in data:
@@ -358,7 +434,7 @@ class PDFGenerator:
                                                self.styles['ChineseBody']))
                 
                 story.extend(self._create_rounded_section("Results", 
-                                                        results_content, page_width))
+                                                        results_content, content_width))
         
         # Build PDF
         doc.build(story)

@@ -313,15 +313,24 @@ IMPORTANT FOR IMAGE EXTRACTION AND CLASSIFICATION:
         """Translate extracted data to Chinese using TRANSLATE_MODEL"""
         translate_model = os.getenv("TRANSLATE_MODEL", self.model)
         
-        # Prepare content for translation
+        # Prepare content for translation - include ALL fields
         content_to_translate = {
             "title": data.get("title", ""),
             "abstract": data.get("abstract", ""),
             "background": [],
             "contributions": [],
-            "method_description": data.get("method", {}).get("description", ""),
-            "method_key_points": data.get("method", {}).get("key_points", []),
-            "results_evaluation": data.get("results", {}).get("evaluation", "")
+            "method": {
+                "description": data.get("method", {}).get("description", ""),
+                "subsections": [],
+                "key_points": data.get("method", {}).get("key_points", [])
+            },
+            "results": {
+                "subsections": [],
+                "baseline": data.get("results", {}).get("baseline", ""),
+                "datasets": data.get("results", {}).get("datasets", ""),
+                "experimental_setup": data.get("results", {}).get("experimental_setup", ""),
+                "evaluation": data.get("results", {}).get("evaluation", "")
+            }
         }
         
         # Extract background content
@@ -348,9 +357,24 @@ IMPORTANT FOR IMAGE EXTRACTION AND CLASSIFICATION:
             else:
                 content_to_translate["contributions"].append(contrib)
         
+        # Extract method subsections
+        for subsec in data.get("method", {}).get("subsections", []):
+            content_to_translate["method"]["subsections"].append({
+                "title": subsec.get("title", ""),
+                "content": subsec.get("content", "")
+            })
+        
+        # Extract results subsections
+        for subsec in data.get("results", {}).get("subsections", []):
+            content_to_translate["results"]["subsections"].append({
+                "title": subsec.get("title", ""),
+                "content": subsec.get("content", "")
+            })
+        
         # Create translation prompt
         translate_prompt = f"""Please translate the following academic paper content from English to Chinese. 
-Maintain the structure and keep technical terms accurate. Return the translation in the same JSON format.
+Maintain the structure and keep technical terms accurate. For technical terms, you can keep the English term followed by Chinese translation in parentheses.
+Return the translation in the same JSON format.
 
 Content to translate:
 {json.dumps(content_to_translate, ensure_ascii=False, indent=2)}
@@ -394,14 +418,32 @@ Return the Chinese translation in this exact format, maintaining all structure."
                         data["contributions"][i] = trans_contrib
             
             # Update method
-            if "method" in data and "method_description" in translated:
-                data["method"]["description"] = translated.get("method_description", data["method"].get("description", ""))
-                if "method_key_points" in translated:
-                    data["method"]["key_points"] = translated.get("method_key_points", data["method"].get("key_points", []))
+            if "method" in data and "method" in translated:
+                trans_method = translated["method"]
+                data["method"]["description"] = trans_method.get("description", data["method"].get("description", ""))
+                data["method"]["key_points"] = trans_method.get("key_points", data["method"].get("key_points", []))
+                
+                # Update method subsections
+                for i, subsec in enumerate(data["method"].get("subsections", [])):
+                    if i < len(trans_method.get("subsections", [])):
+                        trans_subsec = trans_method["subsections"][i]
+                        subsec["title"] = trans_subsec.get("title", subsec.get("title", ""))
+                        subsec["content"] = trans_subsec.get("content", subsec.get("content", ""))
             
-            # Update results
-            if "results" in data and "results_evaluation" in translated:
-                data["results"]["evaluation"] = translated.get("results_evaluation", data["results"].get("evaluation", ""))
+            # Update results  
+            if "results" in data and "results" in translated:
+                trans_results = translated["results"]
+                data["results"]["baseline"] = trans_results.get("baseline", data["results"].get("baseline", ""))
+                data["results"]["datasets"] = trans_results.get("datasets", data["results"].get("datasets", ""))
+                data["results"]["experimental_setup"] = trans_results.get("experimental_setup", data["results"].get("experimental_setup", ""))
+                data["results"]["evaluation"] = trans_results.get("evaluation", data["results"].get("evaluation", ""))
+                
+                # Update results subsections
+                for i, subsec in enumerate(data["results"].get("subsections", [])):
+                    if i < len(trans_results.get("subsections", [])):
+                        trans_subsec = trans_results["subsections"][i]
+                        subsec["title"] = trans_subsec.get("title", subsec.get("title", ""))
+                        subsec["content"] = trans_subsec.get("content", subsec.get("content", ""))
             
         except Exception as e:
             print(f"Translation error: {e}. Keeping original English content.")
