@@ -374,7 +374,7 @@ class HTMLGenerator:
     <div class="container">
         {content}
         <div class="footer">
-            <p>Generated on {timestamp} | <a href="https://github.com/your-repo/BTMR" target="_blank">BTMR Paper Extractor</a></p>
+            <p>Generated on {timestamp} | <a href="https://github.com/Chivier/BTMR-Paper" target="_blank">BTMR Paper Extractor</a></p>
         </div>
     </div>
 </body>
