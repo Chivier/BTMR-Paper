@@ -56,7 +56,7 @@ class OpenAIExtractor(LLMExtractor):
 
 1. **Paper Title**: The main title of the paper.
 2. **Authors**: List of authors as an array of strings, one per author.
-3. **Abstract**: Extract a CONCISE summary of the paper (100-150 words). Focus on the core problem, approach, and key results. Use **bold** markdown to highlight important metrics and achievements.
+3. **Abstract**: Extract a CONCISE summary of the paper (100-150 words). Focus on the core problem, approach, and key results. Use **bold** markdown to highlight important metrics and achievements. When appropriate, reference key figures showing results (e.g., "achieving **10× speedup** (see Figure 9)").
 4. **Background**: Extract main background topics with:
    - Blog-style writing with descriptive titles
    - Use **bold** markdown to highlight key concepts, challenges, and important facts
@@ -66,18 +66,25 @@ class OpenAIExtractor(LLMExtractor):
    - Clear, descriptive titles
    - Highlight ALL key metrics, numbers, and achievements using **bold** markdown
    - Focus on concrete improvements and quantifiable results
+   - When appropriate, reference figures that illustrate the contribution
 6. **Method**: Detailed methodology with:
    - Use **bold** to highlight key techniques, algorithms, and design choices
    - Organize content in logical subsections (e.g., "System Architecture", "Algorithm Design", "Implementation Details")
-   - Place figures IMMEDIATELY AFTER the text that describes them
-   - Include ONLY figures that show HOW the system works (architecture, algorithms, workflows)
+   - Include ONLY figures that show HOW the system works:
+     * Architecture diagrams, system design
+     * Algorithm descriptions, workflow diagrams
+     * Implementation details, component diagrams
+     * Design intuitions, parallelism plans
    - Do NOT include performance evaluation figures here
+   - Only reference figures that directly support the method description
 7. **Results**: Comprehensive results with:
    - Use **bold** to highlight ALL performance numbers, improvements, and comparisons
    - Organize by evaluation aspects (e.g., "Performance Comparison", "Scalability Analysis", "Energy Efficiency")
-   - Place figures IMMEDIATELY AFTER the related performance discussion
-   - Include ONLY figures that show evaluation results, benchmarks, or comparisons
-   - Include tables with numerical results
+   - Include ONLY figures that show evaluation results:
+     * Performance comparisons (with "vs", "comparison")
+     * Benchmark results, speedup graphs
+     * Experimental evaluations
+   - Properly distinguish between figures and tables
    - Remove any placeholder text like "(details not specified in the provided content)"
 
 {"IMPORTANT: The paper content is in HTML format. Look for <img> tags and extract the 'src' attribute value EXACTLY as it appears. These will be paths like 'output/debug_test/images/arxiv_img_1.png'. Extract the EXACT path from src attribute, do NOT modify or create placeholder URLs." if format_type == "html" else ""}
@@ -87,21 +94,41 @@ IMAGE CAPTION INFORMATION:
 The following images are available in the paper with their captions:
 {json.dumps(image_mapping, indent=2) if image_mapping else "No caption information available"}
 
-Use the caption information above to correctly classify images:
-- **Method figures**: Should show HOW the system works
-  * Architecture diagrams, system design, framework overview
-  * Algorithm descriptions, workflow diagrams, model structure
-  * Implementation details, parallelism plans, data flow
-  * Technical components (e.g., "PLMR compliance", "parallelism plan")
-- **Result figures**: Should show EVALUATION and PERFORMANCE
-  * Performance comparisons (e.g., "vs", "comparison")
-  * Scalability analysis, benchmark results
-  * Speedup graphs, accuracy charts
-  * Experimental results and evaluations
-- **Tables**: Numerical data, comparisons, specifications
-  * If caption contains "Table", include in results.tables
-  
-IMPORTANT: Each image should appear in ONLY ONE section. For borderline cases like "scalability analysis", prefer results.figures since it shows evaluation outcomes.
+CRITICAL RULES FOR IMAGE USAGE:
+
+1. **DO NOT USE ALL IMAGES** - Only reference images that naturally fit the content you're describing
+
+2. **DISTINGUISH FIGURES FROM TABLES**:
+   - ONLY include in results.tables if the caption explicitly starts with "Table X:"
+   - ALL images with "Figure X:" are FIGURES (not tables)
+   - If there are no actual table images, leave results.tables as empty array []
+   - NEVER convert a Figure into a Table just because the paper text mentions a table
+   - NEVER put the same image in both figures and tables
+
+3. **METHOD FIGURES** (method.subsections[].figures):
+   - Architecture, system design, framework diagrams
+   - Algorithm flowcharts, workflow diagrams
+   - Implementation details, component organization
+   - Design intuitions, parallelism plans
+   - Keywords: "architecture", "design", "plan", "framework", "algorithm", "workflow"
+   - EXCLUDE: anything with "vs", "comparison", "performance", "speedup"
+
+4. **RESULTS FIGURES** (results.subsections[].figures):
+   - Performance comparisons ("X vs Y")
+   - Benchmark results, speedup graphs
+   - Experimental evaluations, measurements
+   - Keywords: "vs", "comparison", "performance", "speedup", "benchmark", "evaluation"
+   - EXCLUDE: design diagrams, architecture, workflow
+
+5. **SMART PLACEMENT**:
+   - In abstract: reference key results with "(see Figure X)" when mentioning performance
+   - In contributions: reference figures that illustrate the contribution
+   - Place figures contextually - don't force all images to be used
+   - Each image should appear EXACTLY ONCE
+
+6. **For "scalability analysis" or ambiguous cases**:
+   - If it shows HOW to achieve scalability → method
+   - If it shows MEASURED scalability results → results
 ''' if image_mapping else ''}
 
 Paper content:
@@ -172,38 +199,28 @@ Return the information in this JSON format:
         "baseline": "Baseline comparison details...",
         "datasets": "Datasets used...",
         "experimental_setup": "Experimental setup details...",
-        "tables": [
-            {{
-                "url": "ACTUAL image URL of table",
-                "caption": "Table X: Description of the table contents"
-            }}
-        ]
+        "tables": []  // CRITICAL: Only include images where caption_tag="Table X:", leave empty if no tables
     }}
 }}
 
 IMPORTANT FOR IMAGE EXTRACTION AND CLASSIFICATION:
-1. **Extract images carefully**:
-   - Look for <img> tags in the HTML
-   - Extract the EXACT src attribute value
-   - Look for figure captions near the image (usually in <figcaption> or text like "Figure X:")
+1. **Check the image metadata provided above**:
+   - Each image has a "caption_tag" field (e.g., "Figure 1:", "Table 1:")
+   - ONLY include an image in results.tables if its caption_tag is "Table X:"
+   - ALL images with "Figure X:" caption_tag are FIGURES, NOT tables
    
-2. **Classify images based on their caption and context**:
-   - **Method figures**: Include in method.figures if caption mentions:
-     * Architecture, system design, framework, model structure
-     * Algorithm, workflow, pipeline, process flow
-     * Component diagram, module organization
-   - **Result figures**: Include in results.figures if caption mentions:
-     * Performance, speedup, throughput, latency
-     * Comparison, evaluation, benchmark results
-     * Graphs, charts, plots showing experimental results
-   - **Tables**: Include in results.tables if it's a table showing:
-     * Numerical comparisons, benchmark results
-     * Performance metrics, evaluation scores
+2. **Classify FIGURES based on their caption content**:
+   - **Method figures**: Architecture, design, algorithm, workflow, framework
+   - **Result figures**: Performance comparison (vs), speedup, benchmark results
    
-3. **Avoid duplication**:
-   - Each image should appear ONLY ONCE in the appropriate section
-   - Do NOT include the same image in multiple sections
-   - If an image could fit multiple categories, choose the most relevant one based on its primary purpose
+3. **DO NOT CREATE TABLES**:
+   - If no images have "Table X:" in caption_tag, leave results.tables empty []
+   - NEVER convert a Figure into a Table
+   - The paper text may mention tables that don't exist as images
+   
+4. **Avoid duplication**:
+   - Each image should appear ONLY ONCE
+   - Check the actual image path/URL to ensure no duplicates
 """
         
         # Debug: Print content length
