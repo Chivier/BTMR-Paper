@@ -2,6 +2,8 @@
 
 BTMR (Beautiful Text Mining Reader) is a powerful Python tool that extracts and summarizes academic papers from ArXiv using LLM APIs. It fetches papers, uses AI to extract structured information, and generates beautiful HTML or PDF summaries with intelligent figure classification.
 
+The name BTMR is also inspired by the four most important components of academic papers: **Background**, **Target**, **Method**, and **Result** - the key elements this tool extracts and organizes.
+
 ## Features
 
 - 🚀 **Multi-format Support**: Fetches papers from ArXiv in HTML, PDF, or LaTeX source format
@@ -227,6 +229,12 @@ python tests/test_api.py
 # Check image classification improvements
 python tests/check_final_improvements.py
 ```
+
+## Example Output
+
+### WaferLLM (arxiv.org/abs/2502.04563)
+
+![WaferLLM](./example_output/waferllm.png)
 
 ## Troubleshooting
 
