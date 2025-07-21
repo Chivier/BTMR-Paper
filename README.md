@@ -234,7 +234,7 @@ python tests/check_final_improvements.py
 
 ### WaferLLM (arxiv.org/abs/2502.04563)
 
-![WaferLLM](./examples/waferllm.png)
+[WaferLLM Output Screenshot](https://github.com/Chivier/BTMR-Paper/blob/main/examples/waferllm.png)
 
 ## Troubleshooting
 
