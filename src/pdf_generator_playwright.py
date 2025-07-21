@@ -42,10 +42,22 @@ class PDFGenerator:
                 # Wait for content to fully load
                 page.wait_for_load_state('networkidle')
                 
-                # Generate PDF with print CSS media
+                # Get the content dimensions
+                dimensions = page.evaluate('''() => {
+                    const body = document.body;
+                    const html = document.documentElement;
+                    const height = Math.max(
+                        body.scrollHeight, body.offsetHeight,
+                        html.clientHeight, html.scrollHeight, html.offsetHeight
+                    );
+                    return { height };
+                }''')
+                
+                # Generate PDF as single long page
                 page.pdf(
                     path=output_path,
-                    format='A4',
+                    width='210mm',  # A4 width
+                    height=f'{dimensions["height"]}px',  # Full content height
                     print_background=True,  # Include background colors
                     margin={
                         'top': '20mm',

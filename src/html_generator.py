@@ -209,8 +209,16 @@ class HTMLGenerator:
         }}
 
         .content-box p {{
-            margin: 0;
+            margin: 0 0 0.8em 0;
             color: #4a5568;
+            line-height: 1.6;
+        }}
+        .content-box p:last-child {{
+            margin-bottom: 0;
+        }}
+        .content-box br + strong {{
+            display: inline-block;
+            margin-top: 0.5em;
         }}
         
         .content-box strong {{
@@ -470,6 +478,36 @@ class HTMLGenerator:
         import re
         return re.sub(r'\*\*([^*]+)\*\*', r'<strong>\1</strong>', text)
     
+    def _format_content(self, text: str) -> str:
+        """Format content with proper HTML structure"""
+        import re
+        
+        # Convert markdown bold
+        text = self._convert_markdown_bold(text)
+        
+        # Convert newlines to <br> for better paragraph separation
+        # But first, preserve double newlines as paragraph breaks
+        text = text.replace('\n\n', '</p><p>')
+        text = text.replace('\n', '<br>')
+        
+        # Convert numbered lists (1., 2., 3. at start of line)
+        text = re.sub(r'(?:^|<br>)(\d+)\.\s+', r'<br><strong>\1.</strong> ', text)
+        
+        # Convert bullet points (• or - at start of line)
+        text = re.sub(r'(?:^|<br>)[•\-]\s+', r'<br>• ', text)
+        
+        # Ensure text starts and ends with <p> tags
+        if not text.startswith('<p>'):
+            text = '<p>' + text
+        if not text.endswith('</p>'):
+            text = text + '</p>'
+        
+        # Clean up any double paragraph tags
+        text = text.replace('<p></p>', '')
+        text = text.replace('<p><br>', '<p>')
+        
+        return text
+    
     def _convert_markdown_table(self, text: str) -> str:
         """Convert markdown tables to HTML tables"""
         import re
@@ -516,14 +554,14 @@ class HTMLGenerator:
         
         # Overall description if available
         if method.get('description'):
-            html += f'<div class="content-box method-content"><p>{self._convert_markdown_bold(method["description"])}</p></div>'
+            html += f'<div class="content-box method-content">{self._format_content(method["description"])}</div>'
         
         # Check for new subsections structure
         if method.get('subsections'):
             for subsection in method['subsections']:
                 html += f'<div class="content-box method-content">'
                 html += f'<h3>{subsection.get("title", "")}</h3>'
-                html += f'<p>{self._convert_markdown_bold(subsection.get("content", ""))}</p>'
+                html += self._format_content(subsection.get("content", ""))
                 
                 # Add figures immediately after the related content
                 subsection_figures = subsection.get('figures', [])

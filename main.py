@@ -74,8 +74,8 @@ def main():
     parser.add_argument(
         "--pdf-engine",
         choices=["reportlab", "weasyprint", "playwright"],
-        default="weasyprint",
-        help="PDF generation engine (default: weasyprint for better fidelity)"
+        default="playwright",
+        help="PDF generation engine (default: playwright for better fidelity and no system dependencies)"
     )
     
     args = parser.parse_args()

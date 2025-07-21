@@ -111,16 +111,36 @@ class OpenAIExtractor(LLMExtractor):
    - Highlight ALL key metrics, numbers, and achievements using **bold** markdown
    - Focus on concrete improvements and quantifiable results
    - When appropriate, reference figures that illustrate the contribution
-6. **Method**: Detailed methodology with:
-   - Use **bold** to highlight key techniques, algorithms, and design choices
-   - Organize content in logical subsections (e.g., "System Architecture", "Algorithm Design", "Implementation Details")
-   - Include ONLY figures that show HOW the system works:
-     * Architecture diagrams, system design
-     * Algorithm descriptions, workflow diagrams
-     * Implementation details, component diagrams
-     * Design intuitions, parallelism plans
-   - Do NOT include performance evaluation figures here
-   - Only reference figures that directly support the method description
+6. **Method**: DETAILED methodology explanation suitable for LLM field beginners with EXCELLENT FORMATTING:
+   - **IMPORTANT: Assume the reader is new to this specific approach - explain everything clearly**
+   - **FORMATTING REQUIREMENTS**:
+     * Use SHORT PARAGRAPHS (2-3 sentences max) separated by blank lines
+     * Use numbered lists (1., 2., 3.) for sequential steps
+     * Use bullet points (•) for parallel concepts
+     * **Bold** all technical terms on first use, key insights, and important numbers
+     * Start each major concept with a new paragraph
+   - For EACH algorithm, technique, or design choice, organize as follows:
+     
+     **[Technique Name]**
+     
+     **Why needed:** Brief explanation of the problem or limitation being addressed.
+     
+     **Core idea:** Intuitive explanation using analogies or simple language.
+     
+     **How it works:**
+     1. **Step 1:** Clear description with any necessary context
+     2. **Step 2:** Next step with examples if helpful
+     3. **Step 3:** Continue numbering for all steps
+     
+     **Key insight:** The clever idea that makes this work.
+     
+     **Technical details:** Deeper dive for those who want specifics.
+     
+   - **Define terms inline**: "We use **LoRA** (Low-Rank Adaptation) - a technique that adds small trainable matrices to frozen model weights"
+   - **Use transition phrases** between paragraphs: "Building on this...", "To address this limitation...", "This leads to..."
+   - Break complex methods into clearly labeled subsections
+   - Include ONLY figures that show HOW the system works
+   - Make it scannable - readers should grasp key points from bold text alone
 7. **Results**: Comprehensive results with:
    - Use **bold** to highlight ALL performance numbers, improvements, and comparisons
    - Organize by evaluation aspects (e.g., "Performance Comparison", "Scalability Analysis", "Energy Efficiency")
@@ -199,11 +219,11 @@ Return the information in this JSON format:
         }}
     ],
     "method": {{
-        "description": "Overall methodology description...",
+        "description": "Overall methodology description explaining the high-level approach and key innovations...",
         "subsections": [
             {{
                 "title": "System Architecture",
-                "content": "Description of the architecture...",
+                "content": "**Overview**\n\nOur system consists of **three main components**: the encoder, processor, and decoder. Each plays a crucial role in transforming input into meaningful output.\n\n**Why this design:** Traditional approaches suffer from bottlenecks when scaling. Our architecture addresses this through parallel processing.\n\n**Component Details:**\n\n• **Encoder**: Converts raw input into embeddings using a **transformer-based architecture**\n• **Processor**: Applies our novel **attention mechanism** to focus on relevant features\n• **Decoder**: Generates output using learned representations\n\n**Key insight:** By separating encoding and processing, we achieve **10x faster inference** while maintaining accuracy.\n\n**Technical implementation:** The encoder uses 12 layers with hidden dimension of 768...",
                 "figures": [
                     {{
                         "url": "ACTUAL image URL",
@@ -213,12 +233,12 @@ Return the information in this JSON format:
             }},
             {{
                 "title": "Algorithm Design",
-                "content": "Description of algorithms...",
+                "content": "**Adaptive Attention Algorithm**\n\n**Problem addressed:** Standard attention has O(n²) complexity, limiting sequence length.\n\n**Core idea:** Like a spotlight that dynamically adjusts its focus area - wider for context, narrower for details.\n\n**How it works:**\n1. **Compute query vectors** from input embeddings using learned projection\n2. **Calculate attention scores** using our adaptive threshold mechanism\n3. **Apply sparsity mask** to keep only top-k relevant connections\n4. **Normalize and aggregate** values for final output\n\n**Example:** For a 1000-token sequence, we reduce connections from 1M to just 10K.\n\n**Key insight:** Most tokens only need to attend to **local context** plus a few **global anchors**.\n\n**Complexity:** O(n·k) where k << n, typically k ≈ √n",
                 "figures": []
             }}
         ],
         "key_points": [
-            "Key methodological point 1",
+            "Key innovation explained in simple terms",
             "Key methodological point 2"
         ]
     }},
@@ -373,13 +393,21 @@ IMPORTANT FOR IMAGE EXTRACTION AND CLASSIFICATION:
         
         # Create translation prompt
         translate_prompt = f"""Please translate the following academic paper content from English to Chinese. 
-Maintain the structure and keep technical terms accurate. For technical terms, you can keep the English term followed by Chinese translation in parentheses.
-Return the translation in the same JSON format.
+IMPORTANT REQUIREMENTS:
+1. Maintain the JSON structure and formatting (including **bold** markdown)
+2. For technical terms, keep the English term followed by Chinese translation in parentheses
+3. For the METHOD section specifically:
+   - Keep the detailed, beginner-friendly explanations
+   - Maintain all step-by-step walkthroughs and examples
+   - Preserve the educational tone that explains WHY, WHAT, and HOW
+   - Keep analogies and intuitive explanations
+   - Ensure technical term definitions remain clear
+4. Make the Chinese translation equally accessible to LLM field beginners
 
-Content to translate:
+Content to translate (in JSON format):
 {json.dumps(content_to_translate, ensure_ascii=False, indent=2)}
 
-Return the Chinese translation in this exact format, maintaining all structure."""
+Return the Chinese translation in the same JSON format, maintaining all structure and educational value."""
         
         try:
             response = self.client.chat.completions.create(
