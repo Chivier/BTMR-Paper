@@ -9,11 +9,12 @@ import json
 from datetime import datetime
 from typing import Optional
 
-from arxiv_fetcher import ArxivFetcher
-from paper_extractor import OpenAIExtractor
-from pdf_generator import PDFGenerator
-from html_generator import HTMLGenerator
-from image_processor import ImageProcessor
+from src.arxiv_fetcher import ArxivFetcher
+from src.paper_extractor import OpenAIExtractor
+from src.pdf_generator import PDFGenerator
+from src.html_generator import HTMLGenerator
+from src.image_processor import ImageProcessor
+from src.metadata_logger import MetadataLogger
 
 
 def main():
@@ -90,6 +91,9 @@ def main():
     # Ensure output directory exists
     os.makedirs(os.path.dirname(args.output), exist_ok=True)
     
+    # Track processing time
+    start_time = datetime.now()
+    
     try:
         if args.load_json:
             # Load existing data
@@ -100,6 +104,7 @@ def main():
             image_processor = ImageProcessor(output_dir=os.path.join(paper_folder, 'images'))
             content = ""
             image_mapping = {}
+            format_used = "unknown"  # Default format
             
             if args.input_type == 'arxiv':
                 print(f"Fetching paper from {args.input}...")
@@ -149,6 +154,28 @@ def main():
             generator = PDFGenerator()
             generator.generate(extracted_data, args.output)
             print(f"✅ Successfully generated PDF: {args.output}")
+        
+        # Log metadata
+        
+        # Initialize metadata logger
+        metadata_logger = MetadataLogger()
+        
+        # Extract paper ID from output path
+        paper_id = os.path.basename(paper_folder)
+        
+        # Log the paper processing
+        metadata_logger.log_paper(
+            paper_id=paper_id,
+            title=extracted_data.get('title', 'Unknown'),
+            authors=extracted_data.get('authors', []),
+            arxiv_url=args.input if args.input_type == 'arxiv' else None,
+            format_used=format_used if args.input_type == 'arxiv' else args.input_type,
+            output_format=args.format,
+            output_path=args.output,
+            extracted_data=extracted_data,
+            processing_time=(datetime.now() - start_time).total_seconds(),
+            language=args.lang
+        )
         
         # Print summary
         print("\n📄 Paper Summary:")

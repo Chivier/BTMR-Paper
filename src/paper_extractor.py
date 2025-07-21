@@ -1,5 +1,15 @@
 """
-Paper information extractor using LLM APIs
+Paper Information Extractor using LLM APIs
+
+This module handles the extraction of structured information from academic papers
+using Large Language Models (LLMs). It supports:
+- Intelligent prompt engineering for accurate extraction
+- Smart figure/table classification based on captions
+- Multi-language support (English and Chinese)
+- Context-aware image placement recommendations
+
+The extractor uses carefully crafted prompts to ensure high-quality output with
+proper formatting and intelligent content organization.
 """
 import os
 import json
@@ -12,18 +22,52 @@ load_dotenv()
 
 
 class LLMExtractor(ABC):
-    """Abstract base class for LLM extractors"""
+    """
+    Abstract base class for LLM-based extractors.
+    
+    Provides a common interface for different LLM providers.
+    """
 
     @abstractmethod
     def extract(self, paper_content: str) -> Dict[str, Any]:
-        """Extract structured information from paper content"""
+        """
+        Extract structured information from paper content.
+        
+        Args:
+            paper_content: Raw paper text content
+            
+        Returns:
+            Structured dictionary with extracted information
+        """
         pass
 
 
 class OpenAIExtractor(LLMExtractor):
-    """OpenAI API extractor"""
+    """
+    OpenAI-compatible API extractor for paper information.
+    
+    This class works with any OpenAI-compatible endpoint including:
+    - OpenAI API
+    - Azure OpenAI
+    - Local models (Ollama, LM Studio, vLLM)
+    - Other providers (OpenRouter, Together AI)
+    
+    The extractor implements sophisticated prompt engineering to:
+    - Extract key paper components (title, authors, abstract, etc.)
+    - Classify figures into method vs. results sections
+    - Generate concise summaries with highlighted metrics
+    - Support multi-language output
+    """
 
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None, base_url: Optional[str] = None):
+        """
+        Initialize the OpenAI extractor.
+        
+        Args:
+            api_key: Optional API key (defaults to OPENAI_API_KEY env var)
+            model: Optional model name (defaults to MODEL_NAME env var or "gpt-4-turbo")
+            base_url: Optional API base URL (defaults to OPENAI_API_BASE env var)
+        """
         self.client = openai.OpenAI(
             api_key=api_key or os.getenv("OPENAI_API_KEY"),
             base_url=base_url or os.getenv("OPENAI_API_BASE")

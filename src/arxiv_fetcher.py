@@ -1,5 +1,13 @@
 """
-ArXiv paper fetcher supporting HTML, PDF, and source formats
+ArXiv Paper Fetcher Module
+
+This module provides functionality to fetch academic papers from ArXiv in multiple formats:
+- HTML (preferred): Best for text extraction with preserved formatting and images
+- PDF: Fallback option with OCR support for complex layouts
+- LaTeX Source: Compiles source when available
+- Abstract: Last resort for basic information
+
+The fetcher implements a smart fallback strategy to ensure maximum success rate.
 """
 import os
 import re
@@ -14,9 +22,31 @@ import shutil
 
 
 class ArxivFetcher:
-    """Fetch and extract content from arxiv papers"""
+    """
+    Fetches and extracts content from ArXiv papers with multiple format support.
+    
+    This class implements a cascading fallback strategy:
+    1. Try HTML version (best quality with images)
+    2. Fall back to PDF with OCR
+    3. Try LaTeX source compilation
+    4. Last resort: fetch abstract page
+    
+    Attributes:
+        base_url (str): ArXiv base URL
+        headers (dict): HTTP headers for requests
+        output_dir (str): Directory for saving outputs
+        images_dir (str): Directory for saving images
+        downloaded_images (dict): Maps original URLs to local paths
+    """
     
     def __init__(self, output_dir: Optional[str] = None):
+        """
+        Initialize the ArXiv fetcher.
+        
+        Args:
+            output_dir: Optional directory for saving outputs. If provided,
+                       images will be saved to output_dir/images/
+        """
         self.base_url = "https://arxiv.org"
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
@@ -26,7 +56,21 @@ class ArxivFetcher:
         self.downloaded_images = {}  # Map from original URL to local path
     
     def _extract_arxiv_id(self, url: str) -> Optional[str]:
-        """Extract arxiv ID from various URL formats"""
+        """
+        Extract ArXiv ID from various URL formats.
+        
+        Supports formats like:
+        - https://arxiv.org/abs/2301.12345
+        - https://arxiv.org/pdf/2301.12345v2
+        - https://arxiv.org/abs/cs.CV/2301.12345
+        - Just the ID: 2301.12345 or 2301.12345v1
+        
+        Args:
+            url: ArXiv URL or ID string
+            
+        Returns:
+            ArXiv ID without version suffix, or None if not found
+        """
         # Match patterns like: 2301.12345, 2301.12345v1, cs.CV/2301.12345
         patterns = [
             r'arxiv\.org/abs/(\d{4}\.\d{4,5}(?:v\d+)?)',
@@ -39,14 +83,37 @@ class ArxivFetcher:
             match = re.search(pattern, url)
             if match:
                 arxiv_id = match.group(1)
-                # Remove version if present
+                # Remove version if present (v1, v2, etc.)
                 arxiv_id = re.sub(r'v\d+$', '', arxiv_id)
                 return arxiv_id
         
         return None
     
     def _extract_figure_with_caption(self, figure_elem):
-        """Extract figure element with images and caption information"""
+        """
+        Extract figure/table element with images and caption information.
+        
+        This method is crucial for intelligent image classification. It extracts:
+        - Figure ID (e.g., "S2.F1" for Section 2, Figure 1)
+        - All images within the figure
+        - Caption tag (e.g., "Figure 1:" or "Table 1:")
+        - Full caption text for content-based classification
+        
+        Args:
+            figure_elem: BeautifulSoup figure element
+            
+        Returns:
+            dict: Figure data with structure:
+                {
+                    'id': 'S2.F1',
+                    'images': [{'src': 'x1.png', 'alt': '...', 'local_path': None}, ...],
+                    'caption': {
+                        'tag': 'Figure 1:',
+                        'text': 'Key components in LLM inference',
+                        'full_text': 'Figure 1: Key components in LLM inference'
+                    }
+                }
+        """
         figure_data = {
             'id': figure_elem.get('id', ''),
             'images': [],
@@ -57,19 +124,20 @@ class ArxivFetcher:
             }
         }
         
-        # Extract image information
+        # Extract all images within this figure
         for img in figure_elem.find_all('img'):
             img_info = {
                 'src': img.get('src', ''),
                 'alt': img.get('alt', ''),
-                'local_path': None
+                'local_path': None  # Will be populated during download
             }
             figure_data['images'].append(img_info)
         
-        # Extract caption information
+        # Extract caption information - critical for classification
         caption_elem = figure_elem.find('figcaption')
         if caption_elem:
             # Extract tag (e.g., "Figure 1:" or "Table 1:")
+            # This is used to distinguish figures from tables
             tag_elem = caption_elem.find('span', class_='ltx_tag')
             if tag_elem:
                 figure_data['caption']['tag'] = tag_elem.get_text(strip=True)
@@ -77,7 +145,7 @@ class ArxivFetcher:
             # Extract full caption text
             figure_data['caption']['full_text'] = caption_elem.get_text(separator=' ', strip=True)
             
-            # Extract text without tag
+            # Extract text without tag for cleaner display
             caption_text = figure_data['caption']['full_text']
             if figure_data['caption']['tag']:
                 caption_text = caption_text.replace(figure_data['caption']['tag'], '', 1).strip()

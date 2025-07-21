@@ -1,6 +1,17 @@
 
 """
-HTML generator creating a beautiful vertical long-image layout matching the draft design
+HTML Generator Module
+
+This module creates beautiful, responsive HTML summaries from extracted paper data.
+Features include:
+- Color-coded sections for easy navigation
+- Bento-style layout with subtle dividers
+- Smart image embedding with base64 encoding
+- Responsive design that works on all devices
+- Markdown table support
+- Intelligent figure placement based on content
+
+The design philosophy emphasizes clarity, readability, and visual hierarchy.
 """
 import os
 from typing import Dict, Any, List
@@ -9,9 +20,32 @@ import base64
 import requests
 
 class HTMLGenerator:
-    """Generate beautiful HTML from extracted paper data matching the draft design"""
+    """
+    Generate beautiful HTML summaries from extracted paper data.
+    
+    Creates a visually appealing, long-form HTML document with:
+    - Color-coded sections (purple abstract, orange background, etc.)
+    - Responsive layout that adapts to different screen sizes
+    - Embedded images using base64 encoding
+    - Clean typography with proper spacing
+    - Support for both figures and tables
+    
+    Attributes:
+        template (str): HTML template with embedded CSS
+        output_dir (str): Directory for output files
+        image_folder (str): Path to images folder
+        image_mapping (dict): Maps image URLs to local paths
+        image_counter (int): Counter for unnamed images
+    """
     
     def __init__(self, output_dir=None, image_mapping=None):
+        """
+        Initialize the HTML generator.
+        
+        Args:
+            output_dir: Optional output directory path
+            image_mapping: Optional dictionary mapping URLs to local image paths
+        """
         self.template = self._get_template()
         self.output_dir = output_dir
         self.image_folder = None
