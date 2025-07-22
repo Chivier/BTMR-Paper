@@ -71,12 +71,6 @@ def main():
         default="en",
         help="Output language (default: en)"
     )
-    parser.add_argument(
-        "--pdf-engine",
-        choices=["reportlab", "weasyprint", "playwright"],
-        default="playwright",
-        help="PDF generation engine (default: playwright for better fidelity and no system dependencies)"
-    )
     
     args = parser.parse_args()
     
@@ -156,19 +150,8 @@ def main():
                 generator = HTMLGenerator(output_dir=paper_folder)
             generator.generate(extracted_data, args.output)
         else:
-            print(f"Generating PDF using {args.pdf_engine}: {args.output}...")
-            
-            # Choose PDF generator based on engine
-            if args.pdf_engine == "reportlab":
-                from src.pdf_generator import PDFGenerator
-                generator = PDFGenerator()
-            elif args.pdf_engine == "weasyprint":
-                from src.pdf_generator_weasyprint import PDFGenerator
-                generator = PDFGenerator()
-            else:  # playwright
-                from src.pdf_generator_playwright import PDFGenerator
-                generator = PDFGenerator()
-            
+            print(f"Generating PDF: {args.output}...")
+            generator = PDFGenerator()
             generator.generate(extracted_data, args.output)
             print(f"✅ Successfully generated PDF: {args.output}")
         

@@ -37,12 +37,8 @@ cp .env.example .env
 # Generate HTML summary from ArXiv paper
 python main.py https://arxiv.org/abs/2301.12345
 
-# Generate PDF output (single-page PDF with Playwright engine)
+# Generate PDF output (single-page PDF)
 python main.py https://arxiv.org/abs/2301.12345 --format pdf
-
-# Use different PDF engines
-python main.py https://arxiv.org/abs/2301.12345 --format pdf --pdf-engine reportlab   # Multi-page
-python main.py https://arxiv.org/abs/2301.12345 --format pdf --pdf-engine playwright  # Single page (default)
 
 # Generate Chinese summary
 python main.py https://arxiv.org/abs/2301.12345 --lang zh
@@ -72,9 +68,7 @@ BTMR/
 │   ├── arxiv_fetcher.py     # ArXiv paper fetching logic
 │   ├── paper_extractor.py   # LLM-based information extraction
 │   ├── html_generator.py    # HTML output generation
-│   ├── pdf_generator.py     # PDF output generation (ReportLab)
-│   ├── pdf_generator_playwright.py  # PDF generation with Playwright
-│   ├── pdf_generator_weasyprint.py  # PDF generation with WeasyPrint
+│   ├── pdf_generator.py     # PDF output generation (using Playwright)
 │   ├── image_processor.py   # Image extraction and processing
 │   └── metadata_logger.py   # CSV metadata logging
 ├── scripts/                  # Utility scripts
