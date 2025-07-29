@@ -68,11 +68,20 @@ class OpenAIExtractor(LLMExtractor):
             model: Optional model name (defaults to MODEL_NAME env var or "gpt-4-turbo")
             base_url: Optional API base URL (defaults to OPENAI_API_BASE env var)
         """
+        # Get API key with proper fallback
+        api_key = api_key or os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise ValueError("OpenAI API key not found. Please set OPENAI_API_KEY environment variable or pass api_key parameter.")
+        
+        # Get base URL with proper fallback  
+        base_url = base_url or os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1")
+        
         self.client = openai.OpenAI(
-            api_key=api_key or os.getenv("OPENAI_API_KEY"),
-            base_url=base_url or os.getenv("OPENAI_API_BASE")
+            api_key=api_key,
+            base_url=base_url
         )
         self.model = model or os.getenv("MODEL_NAME", "gpt-4-turbo")
+        print(f"Initialized OpenAI extractor with model: {self.model}, base_url: {base_url}")
 
     def _summarize_text(self, text: str, max_length: int = 150) -> str:
         """Summarize a given text using the OpenAI API."""

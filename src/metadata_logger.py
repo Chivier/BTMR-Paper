@@ -38,6 +38,7 @@ class MetadataLogger:
             'format_used',
             'output_format',
             'output_path',
+            'pdf_path',
             'num_figures',
             'num_tables',
             'processing_time',
@@ -66,6 +67,7 @@ class MetadataLogger:
                   format_used: str,
                   output_format: str,
                   output_path: str,
+                  pdf_path: Optional[str],
                   extracted_data: Dict[str, Any],
                   processing_time: float,
                   language: str = "en"):
@@ -80,6 +82,7 @@ class MetadataLogger:
             format_used: Format used for extraction (html/pdf/source)
             output_format: Output format (html/pdf)
             output_path: Path to the generated output file
+            pdf_path: Path to the generated PDF file (if applicable)
             extracted_data: Full extracted data dictionary
             processing_time: Time taken to process in seconds
             language: Language of output (en/zh)
@@ -113,6 +116,7 @@ class MetadataLogger:
             'format_used': format_used,
             'output_format': output_format,
             'output_path': output_path,
+            'pdf_path': pdf_path or '',
             'num_figures': num_figures,
             'num_tables': num_tables,
             'processing_time': f"{processing_time:.2f}",

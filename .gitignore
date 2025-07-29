@@ -31,3 +31,6 @@ images/
 
 # Draft directory
 draft/
+
+frontend/node_modules
+frontend/dist

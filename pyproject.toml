@@ -1,0 +1,102 @@
+[project]
+name = "btmr-paper"
+version = "0.2.0"
+description = "Beautiful Text Mining Reader - Extract and summarize academic papers with LLM"
+authors = [
+    {name = "BTMR Team", email = "contact@btmr.dev"}
+]
+license = {text = "AGPL-3.0"}
+readme = "README.md"
+requires-python = ">=3.10"
+keywords = ["academic", "papers", "llm", "extraction", "arxiv"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU Affero General Public License v3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "anthropic>=0.18.0",
+    "openai>=1.12.0",
+    "requests>=2.31.0",
+    "beautifulsoup4>=4.12.0",
+    "lxml>=5.2.2",
+    "PyPDF2>=3.0.0",
+    "playwright>=1.40.0",
+    "python-dotenv>=1.0.0",
+    "Pillow>=10.0.0",
+    # FastAPI dependencies for web frontend
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
+    "python-multipart>=0.0.6",
+    "websockets>=12.0",
+    "pydantic>=2.0.0",
+    "jinja2>=3.1.0",
+]
+
+[project.optional-dependencies]
+ocr = [
+    "surya-ocr>=0.14.6",
+    "torch>=2.0.0",
+    "transformers>=4.35.0",
+]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "mypy>=1.5.0",
+    "pre-commit>=3.0.0",
+]
+all = [
+    "btmr-paper[ocr,dev]"
+]
+
+[project.scripts]
+btmr = "src.main:main"
+btmr-server = "src.api.main:start_server"
+
+[project.urls]
+Homepage = "https://github.com/Chivier/BTMR-Paper"
+Repository = "https://github.com/Chivier/BTMR-Paper"
+Issues = "https://github.com/Chivier/BTMR-Paper/issues"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+[tool.black]
+line-length = 88
+target-version = ['py310']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+known_first_party = ["src"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
