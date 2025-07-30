@@ -112,34 +112,88 @@ class PaperProcessingService:
         try:
             start_time = datetime.now()
             
-            # Step 1: Fetch paper content
+            # Step 1: Fetch paper content (with sub-steps)
             await self._update_progress(
-                paper_id, ProcessingStatus.FETCHING, 10.0,
-                "Fetching paper content...", progress_callback
+                paper_id, ProcessingStatus.FETCHING, 5.0,
+                "Starting paper content fetch...", progress_callback,
+                current_step="Initializing", step_number=1, total_steps=4
             )
+            
+            if request.input_type == InputType.ARXIV:
+                await self._update_progress(
+                    paper_id, ProcessingStatus.FETCHING_ARXIV, 15.0,
+                    f"Fetching ArXiv paper: {request.input_source}", progress_callback,
+                    current_step="Fetching from ArXiv", step_number=1, total_steps=4
+                )
             
             content, format_used, image_mapping = await self._fetch_content(
                 request, paper_folder
             )
             
-            # Step 2: Extract information using LLM
+            if image_mapping:
+                await self._update_progress(
+                    paper_id, ProcessingStatus.PROCESSING_IMAGES, 25.0,
+                    f"Processing {len(image_mapping)} images...", progress_callback,
+                    current_step="Processing Images", step_number=1, total_steps=4,
+                    additional_info={"image_count": len(image_mapping)}
+                )
+            
             await self._update_progress(
-                paper_id, ProcessingStatus.EXTRACTING, 40.0,
-                "Extracting paper information using LLM...", progress_callback
+                paper_id, ProcessingStatus.FETCHING_CONTENT, 30.0,
+                "Paper content fetched successfully", progress_callback,
+                current_step="Content Fetched", step_number=1, total_steps=4
+            )
+            
+            # Step 2: Extract information using LLM (with sub-steps)
+            await self._update_progress(
+                paper_id, ProcessingStatus.EXTRACTING, 35.0,
+                "Starting information extraction...", progress_callback,
+                current_step="Preparing Extraction", step_number=2, total_steps=4
+            )
+            
+            await self._update_progress(
+                paper_id, ProcessingStatus.EXTRACTING_STRUCTURE, 45.0,
+                "Analyzing paper structure...", progress_callback,
+                current_step="Analyzing Structure", step_number=2, total_steps=4
+            )
+            
+            await self._update_progress(
+                paper_id, ProcessingStatus.EXTRACTING_CONTENT, 55.0,
+                "Extracting content with AI...", progress_callback,
+                current_step="AI Content Extraction", step_number=2, total_steps=4
             )
             
             extracted_data = await self._extract_information(
                 content, request, format_used, image_mapping
             )
             
-            # Step 3: Generate output
             await self._update_progress(
-                paper_id, ProcessingStatus.GENERATING, 80.0,
-                f"Generating {request.output_format.value.upper()} output...", progress_callback
+                paper_id, ProcessingStatus.EXTRACTING, 70.0,
+                "Information extraction completed", progress_callback,
+                current_step="Extraction Complete", step_number=2, total_steps=4
+            )
+            
+            # Step 3: Generate output (with sub-steps)
+            await self._update_progress(
+                paper_id, ProcessingStatus.GENERATING, 75.0,
+                "Starting output generation...", progress_callback,
+                current_step="Preparing Generation", step_number=3, total_steps=4
+            )
+            
+            await self._update_progress(
+                paper_id, ProcessingStatus.GENERATING_HTML, 80.0,
+                "Generating HTML summary...", progress_callback,
+                current_step="Creating HTML", step_number=3, total_steps=4
             )
 
             output_path, pdf_path = await self._generate_output(
                 extracted_data, request, paper_folder, image_mapping
+            )
+            
+            await self._update_progress(
+                paper_id, ProcessingStatus.GENERATING_PDF, 90.0,
+                "Generating PDF version...", progress_callback,
+                current_step="Creating PDF", step_number=3, total_steps=4
             )
             
             # Step 4: Save metadata and complete
@@ -277,17 +331,33 @@ class PaperProcessingService:
         progress: float,
         message: str,
         callback: Optional[callable] = None,
-        error: Optional[str] = None
+        error: Optional[str] = None,
+        current_step: Optional[str] = None,
+        step_number: Optional[int] = None,
+        total_steps: Optional[int] = None,
+        eta_seconds: Optional[float] = None,
+        additional_info: Optional[Dict[str, Any]] = None
     ):
-        """Update processing progress."""
+        """Update processing progress with detailed information."""
         progress_update = ProcessingProgress(
             paper_id=paper_id,
             status=status,
             progress=progress,
             message=message,
-            error=error
+            error=error,
+            current_step=current_step,
+            step_number=step_number,
+            total_steps=total_steps,
+            eta_seconds=eta_seconds,
+            additional_info=additional_info
         )
         self.active_processes[paper_id] = progress_update
+        
+        # Update active paper status
+        if paper_id in self.active_papers:
+            self.active_papers[paper_id].status = status
+            if error:
+                self.active_papers[paper_id].error_message = error
         
         if callback:
             await callback(progress_update)

@@ -230,7 +230,7 @@ export const ProcessPaperPage: React.FC = () => {
       {/* Error Display */}
       {error && (
         <div className="card bg-red-50 border-red-200">
-          <div className="card-content">
+          <div className="card-content py-2">
             <div className="flex items-center space-x-2 text-red-700">
               <AlertCircle className="w-5 h-5" />
               <p>{error}</p>
@@ -242,7 +242,7 @@ export const ProcessPaperPage: React.FC = () => {
       {/* Upload Progress */}
       {inputType === 'file' && uploadProgress > 0 && uploadProgress < 100 && (
         <div className="card">
-          <div className="card-content">
+          <div className="card-content py-2">
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Uploading file...</span>
@@ -262,7 +262,7 @@ export const ProcessPaperPage: React.FC = () => {
       {/* Processing Progress */}
       {processingProgress && (
         <div className="card">
-          <div className="card-content py-5">
+          <div className="card-content py-2">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="font-medium text-gray-900">Processing Paper</h3>

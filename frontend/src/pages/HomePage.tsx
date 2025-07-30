@@ -26,7 +26,7 @@ export const HomePage: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
         <div className="card">
-          <div className="card-content py-5">
+          <div className="card-content py-2">
             <h3 className="text-lg font-semibold mb-2">Process Papers</h3>
             <p className="text-gray-600 mb-4">
               Upload or provide URLs to academic papers for AI-powered extraction and summarization.
@@ -41,7 +41,7 @@ export const HomePage: React.FC = () => {
         </div>
 
         <div className="card">
-          <div className="card-content py-5">
+          <div className="card-content py-2">
             <h3 className="text-lg font-semibold mb-2">View Papers</h3>
             <p className="text-gray-600 mb-4">
               Browse and manage your processed papers with search and filtering capabilities.

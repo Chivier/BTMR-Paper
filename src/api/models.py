@@ -37,6 +37,16 @@ class ProcessingStatus(str, Enum):
     GENERATING = "generating"
     COMPLETED = "completed"
     FAILED = "failed"
+    
+    # More granular states for better tracking
+    FETCHING_ARXIV = "fetching_arxiv"
+    FETCHING_CONTENT = "fetching_content"
+    PROCESSING_IMAGES = "processing_images"
+    EXTRACTING_STRUCTURE = "extracting_structure"
+    EXTRACTING_CONTENT = "extracting_content"
+    GENERATING_HTML = "generating_html"
+    GENERATING_PDF = "generating_pdf"
+    FINALIZING = "finalizing"
 
 
 class PaperProcessRequest(BaseModel):
@@ -117,6 +127,13 @@ class ProcessingProgress(BaseModel):
     message: str
     timestamp: datetime = Field(default_factory=datetime.now)
     error: Optional[str] = None
+    
+    # Additional fields for detailed tracking
+    current_step: Optional[str] = None
+    total_steps: Optional[int] = None
+    step_number: Optional[int] = None
+    eta_seconds: Optional[float] = None
+    additional_info: Optional[Dict[str, Any]] = None
 
 
 class PaperMetadata(BaseModel):

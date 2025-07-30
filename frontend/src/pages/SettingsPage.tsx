@@ -305,7 +305,7 @@ export const SettingsPage: React.FC = () => {
       <div className="space-y-6">
         <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
         <div className="card">
-          <div className="card-content">
+          <div className="card-content py-2">
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
               <span className="ml-2 text-gray-600">Loading configuration...</span>
@@ -321,7 +321,7 @@ export const SettingsPage: React.FC = () => {
       <div className="space-y-6">
         <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
         <div className="card">
-          <div className="card-content">
+          <div className="card-content py-2">
             <div className="text-center py-8">
               <div className="text-red-600 mb-4">Failed to load configuration</div>
               <p className="text-gray-600 mb-4">{error}</p>
@@ -450,7 +450,7 @@ export const SettingsPage: React.FC = () => {
 
       {/* Tab Content */}
       <div className="card">
-        <div className="card-content">
+        <div className="card-content py-2">
           {activeTab === 'api' && (
             <div className="space-y-6">
               <h3 className="text-lg font-medium text-gray-900">API Configuration</h3>

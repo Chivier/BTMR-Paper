@@ -118,11 +118,54 @@ export const PapersPage: React.FC = () => {
         return 'badge badge-error';
       case 'pending':
       case 'fetching':
+      case 'fetching_arxiv':
+      case 'fetching_content':
+      case 'processing_images':
       case 'extracting':
+      case 'extracting_structure':
+      case 'extracting_content':
       case 'generating':
+      case 'generating_html':
+      case 'generating_pdf':
+      case 'finalizing':
         return 'badge badge-warning';
       default:
         return 'badge badge-neutral';
+    }
+  };
+
+  const getStatusDisplayName = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return 'Completed';
+      case 'failed':
+        return 'Failed';
+      case 'pending':
+        return 'Queued';
+      case 'fetching':
+        return 'Fetching';
+      case 'fetching_arxiv':
+        return 'Fetching ArXiv';
+      case 'fetching_content':
+        return 'Processing Content';
+      case 'processing_images':
+        return 'Processing Images';
+      case 'extracting':
+        return 'Extracting';
+      case 'extracting_structure':
+        return 'Analyzing Structure';
+      case 'extracting_content':
+        return 'AI Extraction';
+      case 'generating':
+        return 'Generating';
+      case 'generating_html':
+        return 'Creating HTML';
+      case 'generating_pdf':
+        return 'Creating PDF';
+      case 'finalizing':
+        return 'Finalizing';
+      default:
+        return status;
     }
   };
 
@@ -186,7 +229,7 @@ export const PapersPage: React.FC = () => {
       {/* Error Display */}
       {error && (
         <div className="card bg-red-50 border-red-200">
-          <div className="card-content">
+          <div className="card-content py-2">
             <div className="flex items-center space-x-2 text-red-700">
               <AlertCircle className="w-5 h-5" />
               <p>{error}</p>
@@ -198,7 +241,7 @@ export const PapersPage: React.FC = () => {
       {/* Processing Progress */}
       {processingProgress && (
         <div className="card">
-          <div className="card-content py-5">
+          <div className="card-content py-2">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="font-medium text-gray-900">Processing Paper</h3>
@@ -228,7 +271,7 @@ export const PapersPage: React.FC = () => {
       <div>
         {isLoading ? (
           <div className="card">
-            <div className="card-content">
+            <div className="card-content py-2">
               <div className="flex items-center justify-center space-x-2 text-gray-600">
                 <Loader2 className="w-5 h-5 animate-spin" />
                 <p>Loading papers...</p>
@@ -238,22 +281,30 @@ export const PapersPage: React.FC = () => {
         ) : papers.length > 0 ? (
           papers.map((paper) => (
             <div key={paper.paper_id} className="card hover:shadow-md transition-shadow duration-200">
-              <div className="card-content py-5">
+              <div className="card-content py-2">
                 <div className="flex items-start justify-between">
-                  <div 
-                    className="flex items-start space-x-3 flex-1 cursor-pointer"
-                    onClick={() => handleViewPaper(paper.paper_id)}
-                  >
+                  <div className="flex items-start space-x-3 flex-1">
                     <FileText className="w-5 h-5 text-gray-400 mt-1" />
                     <div className="flex-1">
-                      <h3 className="font-medium text-gray-900 hover:text-blue-600 transition-colors">
+                      <h3 className="font-medium text-gray-900">
                         {paper.title}
                       </h3>
                       <p className="text-sm text-gray-600">
                         {Array.isArray(paper.authors) ? paper.authors.join(', ') : paper.authors}
                       </p>
                       {paper.arxiv_url && (
-                        <p className="text-sm text-blue-600">{paper.arxiv_url}</p>
+                        <p className="text-sm">
+                          <a 
+                            href={paper.arxiv_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+                            onClick={(e) => e.stopPropagation()}
+                            title="View original paper on ArXiv"
+                          >
+                            {paper.arxiv_url}
+                          </a>
+                        </p>
                       )}
                       <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
                         <span>
@@ -323,7 +374,7 @@ export const PapersPage: React.FC = () => {
                       </button>
                     )}
                     <span className={getStatusBadgeClass(paper.status)}>
-                      {paper.status}
+                      {getStatusDisplayName(paper.status)}
                     </span>
                   </div>
                 </div>
@@ -332,7 +383,7 @@ export const PapersPage: React.FC = () => {
           ))
         ) : (
           <div className="card">
-            <div className="card-content">
+            <div className="card-content py-2">
               <div className="text-center space-y-4">
                 <p className="text-gray-600">
                   Your processed papers will appear here. Start by processing your first paper!
