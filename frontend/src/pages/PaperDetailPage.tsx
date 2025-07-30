@@ -318,32 +318,35 @@ export const PaperDetailPage: React.FC = () => {
 
       {/* Paper Content for Completed Papers */}
       {metadata.status === 'completed' && (
-        <div className="card">
-          <div className="card-header">
-            <h3 className="card-title">Generated Summary</h3>
-          </div>
-          <div className="card-content p-0">
-            {isLoadingHtml ? (
-              <div className="flex items-center justify-center space-x-2 text-gray-600 py-8">
-                <Loader2 className="w-5 h-5 animate-spin" />
-                <p>Loading content...</p>
+        <>
+          {isLoadingHtml ? (
+            <div className="card">
+              <div className="card-header">
+                <h3 className="card-title">Generated Summary</h3>
               </div>
-            ) : htmlContent ? (
-              <iframe
-                srcDoc={htmlContent}
-                className="w-full border-0"
-                style={{ minHeight: '800px', height: '80vh' }}
-                title="Paper Summary"
-                sandbox="allow-same-origin allow-scripts"
-              />
-            ) : (
-              <div className="p-6 text-center text-gray-600">
-                <Eye className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                <p>No content available</p>
+              <div className="card-content py-2">
+                <div className="flex items-center justify-center space-x-2 text-gray-600 py-8">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <p>Loading content...</p>
+                </div>
               </div>
-            )}
-          </div>
-        </div>
+            </div>
+          ) : htmlContent ? (
+            <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
+          ) : (
+            <div className="card">
+              <div className="card-header">
+                <h3 className="card-title">Generated Summary</h3>
+              </div>
+              <div className="card-content py-2">
+                <div className="p-6 text-center text-gray-600">
+                  <Eye className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                  <p>No content available</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
