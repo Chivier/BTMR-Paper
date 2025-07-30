@@ -230,10 +230,49 @@ class PaperProcessingService:
             return paper_id, extracted_data, str(output_path)
             
         except Exception as e:
+            # Update progress with error
             await self._update_progress(
                 paper_id, ProcessingStatus.FAILED, 0.0,
                 f"Processing failed: {str(e)}", progress_callback, error=str(e)
             )
+            
+            # Calculate processing time up to failure
+            processing_time = (datetime.now() - start_time).total_seconds()
+            
+            # Get the paper metadata for logging the failure
+            paper_metadata = self.active_papers.get(paper_id)
+            if paper_metadata:
+                # Log the failed paper to metadata logger with detailed error information
+                self.metadata_logger.log_failed_paper(
+                    paper_id=paper_id,
+                    title=paper_metadata.title,
+                    authors=paper_metadata.authors,
+                    arxiv_url=paper_metadata.arxiv_url,
+                    format_used=paper_metadata.format_used,
+                    output_format=request.output_format.value,
+                    error_message=str(e),
+                    processing_time=processing_time,
+                    language=request.language.value
+                )
+            else:
+                # Fallback if no paper metadata available
+                self.metadata_logger.log_failed_paper(
+                    paper_id=paper_id,
+                    title="Unknown Paper",
+                    authors=[],
+                    arxiv_url=request.input_source if request.input_type == InputType.ARXIV else None,
+                    format_used=request.input_type.value,
+                    output_format=request.output_format.value,
+                    error_message=str(e),
+                    processing_time=processing_time,
+                    language=request.language.value
+                )
+            
+            # Update active paper status
+            if paper_id in self.active_papers:
+                self.active_papers[paper_id].status = ProcessingStatus.FAILED
+                self.active_papers[paper_id].error_message = str(e)
+            
             raise
     
     async def _fetch_content(
@@ -242,25 +281,35 @@ class PaperProcessingService:
         paper_folder: Path
     ) -> Tuple[str, str, Dict]:
         """Fetch paper content based on input type."""
-        image_processor = ImageProcessor(output_dir=str(paper_folder / 'images'))
-        
-        if request.input_type == InputType.ARXIV:
-            fetcher = ArxivFetcher(output_dir=str(paper_folder))
-            content, format_used, image_mapping = fetcher.fetch(
-                request.input_source, request.fetch_format
-            )
-            return content, format_used, image_mapping
+        try:
+            image_processor = ImageProcessor(output_dir=str(paper_folder / 'images'))
             
-        elif request.input_type == InputType.URL:
-            _, content, image_mapping = image_processor.process_html(request.input_source)
-            return content, "url", image_mapping
-            
-        elif request.input_type == InputType.MARKDOWN:
-            content, image_mapping = image_processor.process_markdown(request.input_source)
-            return content, "markdown", image_mapping
-            
-        else:
-            raise ValueError(f"Unsupported input type: {request.input_type}")
+            if request.input_type == InputType.ARXIV:
+                fetcher = ArxivFetcher(output_dir=str(paper_folder))
+                content, format_used, image_mapping = fetcher.fetch(
+                    request.input_source, request.fetch_format
+                )
+                return content, format_used, image_mapping
+                
+            elif request.input_type == InputType.URL:
+                _, content, image_mapping = image_processor.process_html(request.input_source)
+                return content, "url", image_mapping
+                
+            elif request.input_type == InputType.MARKDOWN:
+                content, image_mapping = image_processor.process_markdown(request.input_source)
+                return content, "markdown", image_mapping
+                
+            else:
+                raise ValueError(f"Unsupported input type: {request.input_type}")
+        except Exception as e:
+            if request.input_type == InputType.ARXIV:
+                raise Exception(f"Failed to download ArXiv paper '{request.input_source}': {str(e)}")
+            elif request.input_type == InputType.URL:
+                raise Exception(f"Failed to fetch content from URL '{request.input_source}': {str(e)}")
+            elif request.input_type == InputType.MARKDOWN:
+                raise Exception(f"Failed to process markdown content: {str(e)}")
+            else:
+                raise Exception(f"Failed to fetch content for input type '{request.input_type}': {str(e)}")
     
     async def _extract_information(
         self,
@@ -270,27 +319,35 @@ class PaperProcessingService:
         image_mapping: Dict
     ) -> ExtractedData:
         """Extract structured information using LLM."""
-        extractor = OpenAIExtractor(
-            model=request.model,
-            base_url=request.openai_base_url
-        )
-        
-        # Run extraction in thread pool to avoid blocking
-        loop = asyncio.get_event_loop()
-        extracted_data = await loop.run_in_executor(
-            None,
-            lambda: extractor.extract(
-                content,
-                language=request.language.value,
-                format_type=format_used,
-                image_mapping=image_mapping
+        try:
+            extractor = OpenAIExtractor(
+                model=request.model,
+                base_url=request.openai_base_url
             )
-        )
-        
-        if "error" in extracted_data:
-            raise Exception(f"Extraction failed: {extracted_data['error']}")
-        
-        return ExtractedData(**extracted_data)
+            
+            # Run extraction in thread pool to avoid blocking
+            loop = asyncio.get_event_loop()
+            extracted_data = await loop.run_in_executor(
+                None,
+                lambda: extractor.extract(
+                    content,
+                    language=request.language.value,
+                    format_type=format_used,
+                    image_mapping=image_mapping
+                )
+            )
+            
+            if "error" in extracted_data:
+                raise Exception(f"AI extraction failed: {extracted_data['error']}")
+            
+            return ExtractedData(**extracted_data)
+        except Exception as e:
+            if "API" in str(e) or "OpenAI" in str(e):
+                raise Exception(f"AI service error during content extraction: {str(e)}")
+            elif "timeout" in str(e).lower():
+                raise Exception(f"AI extraction timed out. The paper may be too long or complex: {str(e)}")
+            else:
+                raise Exception(f"Failed to extract information from paper content: {str(e)}")
     
     async def _generate_output(
         self,
@@ -300,29 +357,42 @@ class PaperProcessingService:
         image_mapping: Dict
     ) -> str:
         """Generate output file (HTML or PDF)."""
-    
-        output_path = paper_folder / f"summary.html"
-        pdf_path = paper_folder / "summary.pdf"
-        
-        # Run generation in thread pool to avoid blocking
-        loop = asyncio.get_event_loop()
-        
-        html_generator = HTMLGenerator(
-            output_dir=str(paper_folder),
-            image_mapping=image_mapping
-        )
-        await loop.run_in_executor(
-            None,
-            lambda: html_generator.generate(extracted_data.model_dump(), str(output_path))
-        )
-        
-        pdf_generator = PDFGenerator()
-        await loop.run_in_executor(
-            None,
-            lambda: pdf_generator.generate(extracted_data.model_dump(), str(pdf_path))
-        )
-        
-        return str(output_path), str(pdf_path)
+        try:
+            output_path = paper_folder / f"summary.html"
+            pdf_path = paper_folder / "summary.pdf"
+            
+            # Run generation in thread pool to avoid blocking
+            loop = asyncio.get_event_loop()
+            
+            # Generate HTML
+            try:
+                html_generator = HTMLGenerator(
+                    output_dir=str(paper_folder),
+                    image_mapping=image_mapping
+                )
+                await loop.run_in_executor(
+                    None,
+                    lambda: html_generator.generate(extracted_data.model_dump(), str(output_path))
+                )
+            except Exception as e:
+                raise Exception(f"Failed to generate HTML summary: {str(e)}")
+            
+            # Generate PDF
+            try:
+                pdf_generator = PDFGenerator()
+                await loop.run_in_executor(
+                    None,
+                    lambda: pdf_generator.generate(extracted_data.model_dump(), str(pdf_path))
+                )
+            except Exception as e:
+                raise Exception(f"Failed to generate PDF summary: {str(e)}")
+            
+            return str(output_path), str(pdf_path)
+        except Exception as e:
+            if "HTML" in str(e) or "PDF" in str(e):
+                raise  # Re-raise specific HTML/PDF errors
+            else:
+                raise Exception(f"Failed to generate output files: {str(e)}")
     
     async def _update_progress(
         self,
@@ -407,6 +477,17 @@ class PaperProcessingService:
                         except:
                             pass
 
+                    # Parse status properly - handle both enum values and string values
+                    try:
+                        parsed_status = ProcessingStatus(status)
+                    except ValueError:
+                        # If status is not a valid enum value, check if it should be failed
+                        if status == 'failed' or error_message:
+                            parsed_status = ProcessingStatus.FAILED
+                        else:
+                            parsed_status = ProcessingStatus.COMPLETED
+                        print(f"Warning: Unknown status '{status}' for paper {paper_data['paper_id']}, using {parsed_status.value}")
+
                     metadata = PaperMetadata(
                         paper_id=paper_data['paper_id'],
                         title=paper_data['title'],
@@ -417,7 +498,7 @@ class PaperProcessingService:
                         language=paper_data.get('language', 'en'),
                         processing_time=float(paper_data['processing_time']),
                         created_at=datetime.fromisoformat(paper_data['timestamp']),
-                        status=ProcessingStatus(status) if status in [s.value for s in ProcessingStatus] else ProcessingStatus.COMPLETED,
+                        status=parsed_status,
                         error_message=error_message if error_message else None,
                         retry_count=retry_count,
                         last_failed_at=last_failed_at

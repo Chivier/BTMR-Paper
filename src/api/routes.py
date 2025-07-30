@@ -142,10 +142,7 @@ async def process_paper(
                     del paper_service.active_papers[pid]
             except Exception as e:
                 print(f"Background processing failed for {pid}: {e}")
-                # Update paper status to failed
-                if pid in paper_service.active_papers:
-                    paper_service.active_papers[pid].status = 'failed'
-                # Send error via WebSocket
+                # Error is already logged in the process_paper method, just send WebSocket update
                 error_progress = ProcessingProgress(
                     paper_id=pid,
                     status='failed',
@@ -154,6 +151,10 @@ async def process_paper(
                     error=str(e)
                 )
                 await manager.send_progress_update(error_progress)
+                
+                # Clean up active papers
+                if pid in paper_service.active_papers:
+                    del paper_service.active_papers[pid]
         
         background_tasks.add_task(process_with_progress, request, paper_id)
         
@@ -397,7 +398,7 @@ async def retry_paper(paper_id: str, background_tasks: BackgroundTasks):
                     del paper_service.active_papers[pid]
             except Exception as e:
                 print(f"Retry processing failed for {pid}: {e}")
-                # Update paper status to failed
+                # Error is already logged in the process_paper method, just update retry count
                 paper_service.metadata_logger.update_paper_status(
                     pid, 'failed', str(e)
                 )
@@ -410,6 +411,10 @@ async def retry_paper(paper_id: str, background_tasks: BackgroundTasks):
                     error=str(e)
                 )
                 await manager.send_progress_update(error_progress)
+                
+                # Clean up active papers
+                if pid in paper_service.active_papers:
+                    del paper_service.active_papers[pid]
         
         background_tasks.add_task(retry_process_with_progress, request, paper_id)
         
