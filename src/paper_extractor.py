@@ -13,6 +13,7 @@ proper formatting and intelligent content organization.
 """
 import os
 import json
+import re
 from typing import Dict, Any, Optional, List
 from abc import ABC, abstractmethod
 import openai
@@ -82,6 +83,134 @@ class OpenAIExtractor(LLMExtractor):
         )
         self.model = model or os.getenv("MODEL_NAME", "gpt-4-turbo")
         print(f"Initialized OpenAI extractor with model: {self.model}, base_url: {base_url}")
+
+    def _parse_llm_response(self, response_content: str) -> Dict[str, Any]:
+        """
+        Robust parser for LLM responses that handles multiple response formats.
+        
+        Handles two scenarios:
+        1. Well-formed JSON object (direct parsing)
+        2. JSON object embedded within other text/information
+        
+        Args:
+            response_content: Raw response content from LLM
+            
+        Returns:
+            Parsed JSON dictionary
+            
+        Raises:
+            ValueError: If no valid JSON can be extracted
+        """
+        if not response_content or not response_content.strip():
+            raise ValueError("Empty response content")
+        
+        response_content = response_content.strip()
+        
+        # Strategy 1: Direct JSON parsing (most common case)
+        try:
+            print("Attempting direct JSON parsing...")
+            return json.loads(response_content)
+        except json.JSONDecodeError as e:
+            print(f"Direct JSON parsing failed: {e}")
+        
+        # Strategy 2: Extract JSON from code blocks (```json ... ```)
+        try:
+            print("Attempting to extract JSON from code blocks...")
+            json_block_pattern = r'```(?:json)?\s*(\{.*?\})\s*```'
+            matches = re.findall(json_block_pattern, response_content, re.DOTALL | re.IGNORECASE)
+            if matches:
+                for match in matches:
+                    try:
+                        return json.loads(match.strip())
+                    except json.JSONDecodeError:
+                        continue
+        except Exception as e:
+            print(f"Code block extraction failed: {e}")
+        
+        # Strategy 3: Find JSON objects using bracket matching
+        try:
+            print("Attempting bracket-based JSON extraction...")
+            # Find potential JSON start positions
+            start_positions = [i for i, char in enumerate(response_content) if char == '{']
+            
+            for start_pos in start_positions:
+                # Use bracket counting to find matching closing brace
+                bracket_count = 0
+                for end_pos in range(start_pos, len(response_content)):
+                    if response_content[end_pos] == '{':
+                        bracket_count += 1
+                    elif response_content[end_pos] == '}':
+                        bracket_count -= 1
+                        if bracket_count == 0:
+                            # Found complete JSON object
+                            json_candidate = response_content[start_pos:end_pos + 1]
+                            try:
+                                return json.loads(json_candidate)
+                            except json.JSONDecodeError:
+                                break  # Try next start position
+        except Exception as e:
+            print(f"Bracket-based extraction failed: {e}")
+        
+        # Strategy 4: Regex patterns for common text wrappers
+        try:
+            print("Attempting regex-based JSON extraction...")
+            # Pattern 1: Text before/after JSON
+            patterns = [
+                r'(?:here\'?s|here is|result|response|output|extraction).*?(\{.*\}).*?(?:hope|help|end|done)',
+                r'(\{[^}]*"title"[^}]*\}.*?\})',  # Look for title field as anchor
+                r'(\{.*?"authors".*?\})',  # Look for authors field as anchor
+                r'.*?(\{.*"abstract".*\}).*?',  # Look for abstract field as anchor
+            ]
+            
+            for pattern in patterns:
+                matches = re.findall(pattern, response_content, re.DOTALL | re.IGNORECASE)
+                if matches:
+                    for match in matches:
+                        try:
+                            return json.loads(match.strip())
+                        except json.JSONDecodeError:
+                            continue
+        except Exception as e:
+            print(f"Regex-based extraction failed: {e}")
+        
+        # Strategy 5: Last resort - extract largest JSON-like structure
+        try:
+            print("Attempting largest JSON structure extraction...")
+            # Find all potential JSON objects and try the largest one
+            json_candidates = []
+            
+            for i in range(len(response_content)):
+                if response_content[i] == '{':
+                    bracket_count = 0
+                    for j in range(i, len(response_content)):
+                        if response_content[j] == '{':
+                            bracket_count += 1
+                        elif response_content[j] == '}':
+                            bracket_count -= 1
+                            if bracket_count == 0:
+                                candidate = response_content[i:j + 1]
+                                json_candidates.append(candidate)
+                                break
+            
+            # Sort by length (longest first) and try to parse
+            json_candidates.sort(key=len, reverse=True)
+            for candidate in json_candidates:
+                try:
+                    parsed = json.loads(candidate)
+                    # Validate it looks like our expected structure
+                    if isinstance(parsed, dict) and any(key in parsed for key in ['title', 'authors', 'abstract']):
+                        return parsed
+                except json.JSONDecodeError:
+                    continue
+        except Exception as e:
+            print(f"Largest structure extraction failed: {e}")
+        
+        # If all strategies fail, raise an error with helpful information
+        print(f"All JSON extraction strategies failed.")
+        print(f"Response content preview (first 500 chars): {response_content[:500]}")
+        print(f"Response content preview (last 500 chars): {response_content[-500:]}")
+        
+        raise ValueError(f"Could not extract valid JSON from LLM response. Response length: {len(response_content)} characters")
 
     def _summarize_text(self, text: str, max_length: int = 150) -> str:
         """Summarize a given text using the OpenAI API."""
@@ -312,8 +441,10 @@ IMPORTANT FOR IMAGE EXTRACTION AND CLASSIFICATION:
                 print("Warning: LLM returned empty response")
                 print(f"Model used: {self.model}")
                 return {"error": "Empty response from LLM"}
-                
-            extracted_data = json.loads(response.choices[0].message.content)
+            
+            # Use robust JSON parser to handle different response formats
+            print("Processing LLM response with robust parser...")
+            extracted_data = self._parse_llm_response(response.choices[0].message.content)
 
             # Don't summarize abstract anymore - keep it longer
             # if "abstract" in extracted_data:
@@ -333,10 +464,23 @@ IMPORTANT FOR IMAGE EXTRACTION AND CLASSIFICATION:
             if language == "zh":
                 extracted_data = self._translate_to_chinese(extracted_data)
             
+            print("Successfully parsed and processed LLM response")
             return extracted_data
+            
+        except ValueError as ve:
+            # Specific handling for JSON parsing errors
+            print(f"JSON parsing error: {ve}")
+            return {
+                "error": f"Failed to parse JSON from LLM response: {ve}",
+                "raw_response": response.choices[0].message.content[:1000] + "..." if len(response.choices[0].message.content) > 1000 else response.choices[0].message.content
+            }
         except Exception as e:
-            print(f"Error parsing response: {e}")
-            return {"error": str(e), "raw_response": response.choices[0].message.content}
+            # General error handling
+            print(f"Unexpected error during response processing: {e}")
+            return {
+                "error": f"Unexpected error: {str(e)}",
+                "raw_response": response.choices[0].message.content[:1000] + "..." if len(response.choices[0].message.content) > 1000 else response.choices[0].message.content
+            }
     
     def _translate_to_chinese(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Translate extracted data to Chinese using TRANSLATE_MODEL"""
@@ -426,7 +570,8 @@ Return the Chinese translation in the same JSON format, maintaining all structur
                 response_format={"type": "json_object"}
             )
             
-            translated = json.loads(response.choices[0].message.content)
+            # Use robust JSON parser for translation response as well
+            translated = self._parse_llm_response(response.choices[0].message.content)
             
             # Apply translations back to original data
             data["title"] = translated.get("title", data.get("title", ""))

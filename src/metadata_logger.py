@@ -43,7 +43,11 @@ class MetadataLogger:
             'num_tables',
             'processing_time',
             'language',
-            'file_size_kb'
+            'file_size_kb',
+            'status',
+            'error_message',
+            'retry_count',
+            'last_failed_at'
         ]
         
         # Create output directory if it doesn't exist
@@ -70,7 +74,9 @@ class MetadataLogger:
                   pdf_path: Optional[str],
                   extracted_data: Dict[str, Any],
                   processing_time: float,
-                  language: str = "en"):
+                  language: str = "en",
+                  status: str = "completed",
+                  error_message: Optional[str] = None):
         """
         Log paper metadata to CSV file.
         
@@ -86,6 +92,8 @@ class MetadataLogger:
             extracted_data: Full extracted data dictionary
             processing_time: Time taken to process in seconds
             language: Language of output (en/zh)
+            status: Processing status (completed/failed)
+            error_message: Error message if processing failed
         """
         # Count figures and tables
         num_figures = 0
@@ -121,7 +129,11 @@ class MetadataLogger:
             'num_tables': num_tables,
             'processing_time': f"{processing_time:.2f}",
             'language': language,
-            'file_size_kb': f"{file_size_kb:.1f}"
+            'file_size_kb': f"{file_size_kb:.1f}",
+            'status': status,
+            'error_message': error_message or '',
+            'retry_count': '0',
+            'last_failed_at': datetime.now().isoformat() if status == 'failed' else ''
         }
         
         # Write to CSV
@@ -210,3 +222,150 @@ class MetadataLogger:
             lang = p.get('language', 'en')
             languages[lang] = languages.get(lang, 0) + 1
         return languages
+
+    def log_failed_paper(self, 
+                        paper_id: str,
+                        title: str,
+                        authors: list,
+                        arxiv_url: Optional[str],
+                        format_used: str,
+                        output_format: str,
+                        error_message: str,
+                        processing_time: float = 0.0,
+                        language: str = "en"):
+        """
+        Log a failed paper processing attempt.
+        
+        Args:
+            paper_id: Unique identifier for the paper
+            title: Paper title
+            authors: List of author names
+            arxiv_url: Original ArXiv URL (if applicable)
+            format_used: Format used for extraction attempt
+            output_format: Intended output format
+            error_message: Error message describing the failure
+            processing_time: Time taken before failure
+            language: Language of output (en/zh)
+        """
+        row_data = {
+            'timestamp': datetime.now().isoformat(),
+            'paper_id': paper_id,
+            'title': title[:100],
+            'authors': '; '.join(authors[:3]),
+            'arxiv_url': arxiv_url or '',
+            'format_used': format_used,
+            'output_format': output_format,
+            'output_path': '',
+            'pdf_path': '',
+            'num_figures': '0',
+            'num_tables': '0',
+            'processing_time': f"{processing_time:.2f}",
+            'language': language,
+            'file_size_kb': '0',
+            'status': 'failed',
+            'error_message': error_message,
+            'retry_count': '0',
+            'last_failed_at': datetime.now().isoformat()
+        }
+        
+        with open(self.csv_path, 'a', newline='', encoding='utf-8') as f:
+            writer = csv.DictWriter(f, fieldnames=self.fieldnames)
+            writer.writerow(row_data)
+
+    def get_paper_by_id(self, paper_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get paper metadata by ID.
+        
+        Args:
+            paper_id: Paper ID to search for
+            
+        Returns:
+            Paper metadata dict or None if not found
+        """
+        if not os.path.exists(self.csv_path):
+            return None
+        
+        with open(self.csv_path, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                if row['paper_id'] == paper_id:
+                    return row
+        return None
+
+    def update_retry_count(self, paper_id: str) -> bool:
+        """
+        Increment retry count for a paper and update last_failed_at.
+        
+        Args:
+            paper_id: Paper ID to update
+            
+        Returns:
+            True if updated successfully, False if paper not found
+        """
+        if not os.path.exists(self.csv_path):
+            return False
+        
+        # Read all rows
+        rows = []
+        updated = False
+        
+        with open(self.csv_path, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                if row['paper_id'] == paper_id:
+                    # Update retry count and last_failed_at
+                    current_count = int(row.get('retry_count', '0'))
+                    row['retry_count'] = str(current_count + 1)
+                    row['last_failed_at'] = datetime.now().isoformat()
+                    row['status'] = 'failed'
+                    updated = True
+                rows.append(row)
+        
+        if updated:
+            # Write back all rows
+            with open(self.csv_path, 'w', newline='', encoding='utf-8') as f:
+                writer = csv.DictWriter(f, fieldnames=self.fieldnames)
+                writer.writeheader()
+                writer.writerows(rows)
+        
+        return updated
+
+    def update_paper_status(self, paper_id: str, status: str, error_message: Optional[str] = None) -> bool:
+        """
+        Update paper status and optionally error message.
+        
+        Args:
+            paper_id: Paper ID to update
+            status: New status
+            error_message: Optional error message
+            
+        Returns:
+            True if updated successfully, False if paper not found
+        """
+        if not os.path.exists(self.csv_path):
+            return False
+        
+        # Read all rows
+        rows = []
+        updated = False
+        
+        with open(self.csv_path, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                if row['paper_id'] == paper_id:
+                    row['status'] = status
+                    if error_message:
+                        row['error_message'] = error_message
+                    if status == 'failed':
+                        row['last_failed_at'] = datetime.now().isoformat()
+                    updated = True
+                rows.append(row)
+        
+        if updated:
+            # Write back all rows
+            with open(self.csv_path, 'w', newline='', encoding='utf-8') as f:
+                writer = csv.DictWriter(f, fieldnames=self.fieldnames)
+                writer.writeheader()
+                writer.writerows(rows)
+        
+        return updated
