@@ -132,6 +132,9 @@ class PaperMetadata(BaseModel):
     created_at: datetime
     file_size: Optional[int] = None
     status: ProcessingStatus
+    error_message: Optional[str] = None
+    retry_count: int = 0
+    last_failed_at: Optional[datetime] = None
 
 
 class PaperResponse(BaseModel):

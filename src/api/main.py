@@ -11,7 +11,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 import uvicorn
 
 from .routes import router
@@ -208,16 +208,6 @@ async def root():
         """)
 
 
-@app.exception_handler(404)
-async def not_found_handler(request, exc):
-    """Custom 404 handler."""
-    return HTTPException(status_code=404, detail="Endpoint not found")
-
-
-@app.exception_handler(500)
-async def internal_error_handler(request, exc):
-    """Custom 500 handler."""
-    return HTTPException(status_code=500, detail="Internal server error")
 
 
 def start_server():

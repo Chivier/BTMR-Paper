@@ -326,6 +326,17 @@ class PaperProcessingService:
                     if isinstance(authors, str):
                         authors = [a.strip() for a in authors.split(',') if a.strip()]
                     
+                    # Parse status, error info, and retry count
+                    status = paper_data.get('status', 'completed')
+                    error_message = paper_data.get('error_message', '')
+                    retry_count = int(paper_data.get('retry_count', '0'))
+                    last_failed_at = None
+                    if paper_data.get('last_failed_at'):
+                        try:
+                            last_failed_at = datetime.fromisoformat(paper_data['last_failed_at'])
+                        except:
+                            pass
+
                     metadata = PaperMetadata(
                         paper_id=paper_data['paper_id'],
                         title=paper_data['title'],
@@ -336,7 +347,10 @@ class PaperProcessingService:
                         language=paper_data.get('language', 'en'),
                         processing_time=float(paper_data['processing_time']),
                         created_at=datetime.fromisoformat(paper_data['timestamp']),
-                        status=ProcessingStatus.COMPLETED  # Assume completed if in metadata
+                        status=ProcessingStatus(status) if status in [s.value for s in ProcessingStatus] else ProcessingStatus.COMPLETED,
+                        error_message=error_message if error_message else None,
+                        retry_count=retry_count,
+                        last_failed_at=last_failed_at
                     )
                     
                     all_papers.append(metadata)
@@ -406,6 +420,10 @@ class PaperProcessingService:
             'images_path': str(paper_folder / 'images') if (paper_folder / 'images').exists() else None
         }
     
+    def get_paper_metadata_by_id(self, paper_id: str) -> Optional[Dict[str, Any]]:
+        """Get paper metadata by ID from metadata logger."""
+        return self.metadata_logger.get_paper_by_id(paper_id)
+
     def delete_paper(self, paper_id: str) -> bool:
         """Delete a paper and its associated files."""
         paper_folder = self.output_dir / paper_id

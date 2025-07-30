@@ -353,6 +353,78 @@ async def download_paper(paper_id: str, format: str = Query("html", regex="^(htm
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/papers/{paper_id}/retry")
+async def retry_paper(paper_id: str, background_tasks: BackgroundTasks):
+    """Retry processing a failed paper."""
+    try:
+        # Check if paper exists and is in failed state
+        paper_data = paper_service.get_paper_metadata_by_id(paper_id)
+        if not paper_data:
+            raise HTTPException(status_code=404, detail="Paper not found")
+        
+        if paper_data.get('status') != 'failed':
+            raise HTTPException(status_code=400, detail="Only failed papers can be retried")
+        
+        # Get current configuration
+        current_config = config_service.get_configuration()
+        
+        # Recreate the original request from stored metadata
+        request = PaperProcessRequest(
+            input_source=paper_data.get('arxiv_url') or paper_data.get('input_source', ''),
+            input_type=paper_data.get('format_used', 'arxiv'),
+            output_format=paper_data.get('output_format', 'html'),
+            language=paper_data.get('language', 'en'),
+            model=current_config.default_model,
+            openai_base_url=current_config.openai_api_base
+        )
+        
+        # Update retry count in metadata
+        paper_service.metadata_logger.update_retry_count(paper_id)
+        
+        # Reset paper status to pending
+        paper_service.metadata_logger.update_paper_status(paper_id, 'pending')
+        
+        # Start processing in background with the same paper_id
+        async def retry_process_with_progress(req: PaperProcessRequest, pid: str):
+            try:
+                await paper_service.process_paper(
+                    req, 
+                    progress_callback=manager.send_progress_update,
+                    paper_id=pid
+                )
+                # Remove from active papers when completed
+                if pid in paper_service.active_papers:
+                    del paper_service.active_papers[pid]
+            except Exception as e:
+                print(f"Retry processing failed for {pid}: {e}")
+                # Update paper status to failed
+                paper_service.metadata_logger.update_paper_status(
+                    pid, 'failed', str(e)
+                )
+                # Send error via WebSocket
+                error_progress = ProcessingProgress(
+                    paper_id=pid,
+                    status='failed',
+                    progress=0.0,
+                    message=f"Retry failed: {str(e)}",
+                    error=str(e)
+                )
+                await manager.send_progress_update(error_progress)
+        
+        background_tasks.add_task(retry_process_with_progress, request, paper_id)
+        
+        return {
+            "paper_id": paper_id,
+            "status": "retry_started",
+            "message": "Paper retry processing started."
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.delete("/papers/{paper_id}")
 async def delete_paper(paper_id: str):
     """Delete a paper and its associated files."""
