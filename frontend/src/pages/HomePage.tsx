@@ -12,9 +12,6 @@ export const HomePage: React.FC = () => {
     navigate('/papers');
   };
 
-  const handleViewStats = () => {
-    navigate('/statistics');
-  };
 
   return (
     <div className="space-y-6">
@@ -27,7 +24,7 @@ export const HomePage: React.FC = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
         <div className="card">
           <div className="card-content py-5">
             <h3 className="text-lg font-semibold mb-2">Process Papers</h3>
@@ -58,20 +55,6 @@ export const HomePage: React.FC = () => {
           </div>
         </div>
 
-        <div className="card">
-          <div className="card-content py-5">
-            <h3 className="text-lg font-semibold mb-2">Statistics</h3>
-            <p className="text-gray-600 mb-4">
-              View processing statistics and insights about your paper collection.
-            </p>
-            <button 
-              className="btn-outline btn-md"
-              onClick={handleViewStats}
-            >
-              View Stats
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   );

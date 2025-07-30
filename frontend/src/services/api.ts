@@ -113,6 +113,11 @@ export const downloadPaper = async (
   return response.data;
 };
 
+export const retryPaper = async (paperId: string): Promise<{ paper_id: string; status: string; message: string }> => {
+  const response = await api.post(`/papers/${paperId}/retry`);
+  return response.data;
+};
+
 export const deletePaper = async (paperId: string): Promise<{ message: string }> => {
   const response = await api.delete(`/papers/${paperId}`);
   return response.data;
@@ -342,19 +347,28 @@ export const validateConfiguration = async (): Promise<ConfigurationValidation> 
 
 export const getAvailableModels = async (
   tempApiKey?: string,
-  tempApiBase?: string
+  tempApiBase?: string,
+  showNotification?: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void
 ): Promise<AvailableModelsResponse> => {
-  const params = new URLSearchParams();
-  if (tempApiKey) {
-    params.append('api_key', tempApiKey);
+  try {
+    const params = new URLSearchParams();
+    if (tempApiKey) {
+      params.append('api_key', tempApiKey);
+    }
+    if (tempApiBase) {
+      params.append('api_base', tempApiBase);
+    }
+    
+    const url = params.toString() ? `/config/models?${params}` : '/config/models';
+    const response: AxiosResponse<AvailableModelsResponse> = await api.get(url);
+    return response.data;
+  } catch (error) {
+    const errorMessage = handleApiError(error);
+    if (showNotification) {
+      showNotification(`Failed to load models: ${errorMessage}`, 'error');
+    }
+    throw error; // Re-throw the error so the calling component can handle it if needed
   }
-  if (tempApiBase) {
-    params.append('api_base', tempApiBase);
-  }
-  
-  const url = params.toString() ? `/config/models?${params}` : '/config/models';
-  const response: AxiosResponse<AvailableModelsResponse> = await api.get(url);
-  return response.data;
 };
 
 // Export the axios instance for custom requests

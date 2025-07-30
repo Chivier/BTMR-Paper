@@ -1,31 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Upload, Link, FileText, Loader2, AlertCircle, Eye } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { FileText, Loader2, AlertCircle, Eye, RotateCcw, Clock } from 'lucide-react';
 import { 
-  processPaper, 
-  uploadFile, 
   listPapers, 
   createProgressWebSocket, 
   handleApiError,
-  isValidArxivUrl,
-  isValidUrl
+  retryPaper
 } from '@/services/api';
 import { 
-  PaperProcessRequest, 
   PaperMetadata, 
-  ProcessingProgress, 
-  UploadedFile 
+  ProcessingProgress
 } from '@/types';
+import { useNotification } from '@/context/NotificationContext';
 
 export const PapersPage: React.FC = () => {
   const navigate = useNavigate();
-  const [showProcessForm, setShowProcessForm] = useState(false);
-  const [inputType, setInputType] = useState<'url' | 'file'>('url');
-  const [inputValue, setInputValue] = useState('');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const location = useLocation();
+  const { showNotification } = useNotification();
   const [isLoading, setIsLoading] = useState(true);
-  const [uploadProgress, setUploadProgress] = useState(0);
   const [processingProgress, setProcessingProgress] = useState<ProcessingProgress | null>(null);
   const [papers, setPapers] = useState<PaperMetadata[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -35,6 +27,21 @@ export const PapersPage: React.FC = () => {
   useEffect(() => {
     loadPapers();
   }, []);
+
+  // Handle navigation from process page with new paper
+  useEffect(() => {
+    const state = location.state as { newPaperId?: string; showProcessing?: boolean };
+    if (state?.newPaperId && state?.showProcessing) {
+      // Show success notification
+      showNotification('Paper submitted successfully! Processing has started.', 'success');
+      
+      // Start tracking the new paper's progress
+      startProgressTracking(state.newPaperId);
+      
+      // Clear the state to prevent re-triggering
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, showNotification]);
 
   // Cleanup WebSocket on unmount
   useEffect(() => {
@@ -60,117 +67,49 @@ export const PapersPage: React.FC = () => {
     }
   };
 
-  const handleProcessPaper = async () => {
-    if (!inputValue.trim() && !selectedFile) return;
-    
-    setIsProcessing(true);
-    setError(null);
-    setProcessingProgress(null);
-    
-    try {
-      let uploadedFileData = null;
-      
-      // Step 1: Handle file upload if needed
-      if (inputType === 'file' && selectedFile) {
-        uploadedFileData = await uploadFile(selectedFile, (progress) => {
-          setUploadProgress(progress);
-        });
-        setUploadProgress(100);
-      }
-      
-      // Step 2: Determine input type and source
-      let input_type: PaperProcessRequest['input_type'];
-      let input_source: string;
-      
-      if (inputType === 'file' && uploadedFileData) {
-        input_type = 'pdf';
-        input_source = uploadedFileData.file_path;
-      } else {
-        // URL processing
-        input_source = inputValue;
-        if (isValidArxivUrl(inputValue)) {
-          input_type = 'arxiv';
-        } else if (isValidUrl(inputValue)) {
-          input_type = 'url';
-        } else {
-          throw new Error('Invalid URL format. Please provide a valid ArXiv URL or direct paper URL.');
-        }
-      }
-      
-      // Step 3: Create processing request
-      const request: PaperProcessRequest = {
-        input_source,
-        input_type,
-        output_format: 'html',
-        language: 'en',
-        save_json: true
-      };
-      
-      // Step 4: Start paper processing
-      const response = await processPaper(request);
-      const paperId = response.paper_id;
-      
-      // Reset form immediately
-      setShowProcessForm(false);
-      setInputValue('');
-      setSelectedFile(null);
-      setUploadProgress(0);
-      
-      // Reload papers list to show the new pending paper from backend
-      loadPapers();
-      
-      // Step 5: Set up WebSocket for progress tracking
-      const ws = createProgressWebSocket(
-        paperId,
-        (progress: ProcessingProgress) => {
-          setProcessingProgress(progress);
-          
-          // Reload papers to get updated status
-          loadPapers();
-          
-          // If processing completed or failed, clear progress and clean up
-          if (progress.status === 'completed' || progress.status === 'failed') {
-            if (progress.status === 'failed') {
-              setError(progress.error || 'Processing failed');
-            }
-            
-            setProcessingProgress(null);
-            if (activeWebSocket) {
-              activeWebSocket.close();
-              setActiveWebSocket(null);
-            }
+  const startProgressTracking = (paperId: string) => {
+    // Close any existing WebSocket
+    if (activeWebSocket) {
+      activeWebSocket.close();
+    }
+
+    // Set up WebSocket for progress tracking
+    const ws = createProgressWebSocket(
+      paperId,
+      (progress: ProcessingProgress) => {
+        setProcessingProgress(progress);
+        
+        // Reload papers to show updated status
+        loadPapers();
+        
+        // If processing completed or failed, clean up
+        if (progress.status === 'completed' || progress.status === 'failed') {
+          if (progress.status === 'completed') {
+            showNotification('Paper processing completed successfully!', 'success');
+          } else if (progress.status === 'failed') {
+            setError(progress.error || 'Processing failed');
+            showNotification('Paper processing failed. Please check the error details.', 'error');
           }
-        },
-        (error) => {
-          console.error('WebSocket error:', error);
-          setError('Connection error during processing');
-        },
-        () => {
-          console.log('WebSocket connection closed');
-          setActiveWebSocket(null);
+          setProcessingProgress(null);
+          if (activeWebSocket) {
+            activeWebSocket.close();
+            setActiveWebSocket(null);
+          }
         }
-      );
-      
-      setActiveWebSocket(ws);
-      
-    } catch (err) {
-      const errorMessage = handleApiError(err);
-      setError(errorMessage);
-      console.error('Error processing paper:', err);
-    } finally {
-      setIsProcessing(false);
-    }
+      },
+      (error) => {
+        console.error('WebSocket error:', error);
+        setError('Connection error during processing');
+      },
+      () => {
+        console.log('WebSocket connection closed');
+        setActiveWebSocket(null);
+      }
+    );
+    
+    setActiveWebSocket(ws);
   };
-  
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      setInputValue(file.name);
-      setUploadProgress(0);
-    }
-  };
-  
+
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
       case 'completed':
@@ -191,105 +130,58 @@ export const PapersPage: React.FC = () => {
     navigate(`/papers/${paperId}`);
   };
 
+  const handleRetryPaper = async (paperId: string) => {
+    try {
+      setError(null);
+      await retryPaper(paperId);
+      
+      // Reload papers to show updated status
+      loadPapers();
+      
+      // Set up WebSocket for retry progress tracking
+      const ws = createProgressWebSocket(
+        paperId,
+        (progress: ProcessingProgress) => {
+          setProcessingProgress(progress);
+          loadPapers();
+          
+          if (progress.status === 'completed' || progress.status === 'failed') {
+            if (progress.status === 'failed') {
+              setError(progress.error || 'Retry failed');
+            }
+            setProcessingProgress(null);
+            if (activeWebSocket) {
+              activeWebSocket.close();
+              setActiveWebSocket(null);
+            }
+          }
+        },
+        (error) => {
+          console.error('WebSocket error during retry:', error);
+          setError('Connection error during retry');
+        }
+      );
+      
+      setActiveWebSocket(ws);
+      
+    } catch (err) {
+      const errorMessage = handleApiError(err);
+      setError(`Retry failed: ${errorMessage}`);
+      console.error('Error retrying paper:', err);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">Papers</h1>
         <button 
           className="btn-primary btn-md"
-          onClick={() => setShowProcessForm(!showProcessForm)}
+          onClick={() => navigate('/process')}
         >
           Process New Paper
         </button>
       </div>
-
-      {showProcessForm && (
-        <div className="card">
-          <div className="card-header">
-            <h3 className="card-title">Process New Paper</h3>
-            <p className="card-description">
-              Upload a PDF file or provide a URL to an academic paper
-            </p>
-          </div>
-          <div className="card-content space-y-4">
-            {/* Input Type Selection */}
-            <div className="flex space-x-4">
-              <button
-                className={`btn ${inputType === 'url' ? 'btn-primary' : 'btn-outline'} btn-sm`}
-                onClick={() => setInputType('url')}
-              >
-                <Link className="w-4 h-4 mr-2" />
-                URL
-              </button>
-              <button
-                className={`btn ${inputType === 'file' ? 'btn-primary' : 'btn-outline'} btn-sm`}
-                onClick={() => setInputType('file')}
-              >
-                <Upload className="w-4 h-4 mr-2" />
-                File Upload
-              </button>
-            </div>
-
-            {/* Input Field */}
-            {inputType === 'url' ? (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Paper URL (ArXiv, DOI, or direct link)
-                </label>
-                <input
-                  type="url"
-                  className="input"
-                  placeholder="https://arxiv.org/abs/2301.12345"
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                />
-              </div>
-            ) : (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Upload PDF File
-                </label>
-                <div className="dropzone">
-                  <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                  <p className="text-sm text-gray-600">
-                    Click to upload or drag and drop your PDF file here
-                  </p>
-                  <input
-                    type="file"
-                    accept=".pdf"
-                    className="hidden"
-                    onChange={handleFileSelect}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="flex space-x-3">
-              <button
-                className="btn-primary btn-md"
-                onClick={handleProcessPaper}
-                disabled={!inputValue.trim() || isProcessing}
-              >
-                {isProcessing ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  'Process Paper'
-                )}
-              </button>
-              <button
-                className="btn-outline btn-md"
-                onClick={() => setShowProcessForm(false)}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Error Display */}
       {error && (
@@ -331,28 +223,9 @@ export const PapersPage: React.FC = () => {
         </div>
       )}
 
-      {/* Upload Progress */}
-      {inputType === 'file' && uploadProgress > 0 && uploadProgress < 100 && (
-        <div className="card">
-          <div className="card-content">
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Uploading file...</span>
-                <span>{uploadProgress}%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-green-600 h-2 rounded-full transition-all duration-300" 
-                  style={{ width: `${uploadProgress}%` }}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Papers List */}
-      <div className="space-y-4">
+      <div>
         {isLoading ? (
           <div className="card">
             <div className="card-content">
@@ -392,7 +265,34 @@ export const PapersPage: React.FC = () => {
                         <span>
                           {paper.output_format} • {paper.language}
                         </span>
+                        {paper.retry_count > 0 && (
+                          <span className="flex items-center text-orange-600">
+                            <RotateCcw className="w-3 h-3 mr-1" />
+                            Retried {paper.retry_count}x
+                          </span>
+                        )}
                       </div>
+
+                      {/* Error message for failed papers */}
+                      {paper.status === 'failed' && paper.error_message && (
+                        <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
+                          <div className="flex items-start space-x-2">
+                            <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1">
+                              <p className="text-sm text-red-800 font-medium">Processing failed:</p>
+                              <p className="text-sm text-red-700 mt-1">{paper.error_message}</p>
+                              {paper.last_failed_at && (
+                                <div className="flex items-center space-x-1 mt-2 text-xs text-red-600">
+                                  <Clock className="w-3 h-3" />
+                                  <span>
+                                    Failed on {new Date(paper.last_failed_at).toLocaleString()}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -406,7 +306,20 @@ export const PapersPage: React.FC = () => {
                         title="View Output"
                       >
                         <Eye className="w-4 h-4 mr-1" />
-                        View Output
+                        View
+                      </button>
+                    )}
+                    {paper.status === 'failed' && (
+                      <button
+                        className="btn btn-outline btn-sm text-blue-600 hover:text-blue-700 hover:border-blue-300"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRetryPaper(paper.paper_id);
+                        }}
+                        title="Retry processing this paper"
+                      >
+                        <RotateCcw className="w-4 h-4 mr-1" />
+                        Retry
                       </button>
                     )}
                     <span className={getStatusBadgeClass(paper.status)}>
@@ -420,9 +333,17 @@ export const PapersPage: React.FC = () => {
         ) : (
           <div className="card">
             <div className="card-content">
-              <p className="text-gray-600 text-center">
-                Your processed papers will appear here. Start by processing your first paper!
-              </p>
+              <div className="text-center space-y-4">
+                <p className="text-gray-600">
+                  Your processed papers will appear here. Start by processing your first paper!
+                </p>
+                <button 
+                  className="btn-primary btn-md"
+                  onClick={() => navigate('/process')}
+                >
+                  Process Your First Paper
+                </button>
+              </div>
             </div>
           </div>
         )}

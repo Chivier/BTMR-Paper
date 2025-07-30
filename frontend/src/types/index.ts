@@ -83,6 +83,9 @@ export interface PaperMetadata {
   created_at: string;
   file_size?: number;
   status: 'pending' | 'fetching' | 'extracting' | 'generating' | 'completed' | 'failed';
+  error_message?: string;
+  retry_count: number;
+  last_failed_at?: string;
 }
 
 export interface PaperResponse {

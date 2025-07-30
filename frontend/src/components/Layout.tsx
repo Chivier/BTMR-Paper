@@ -3,11 +3,12 @@ import { Link, useLocation } from 'react-router-dom';
 import { 
   FileText, 
   Home, 
-  BarChart3, 
   Settings, 
   Menu,
-  X
+  X,
+  Plus
 } from 'lucide-react';
+import Banner from './Banner'; // Import the Banner component
 
 interface LayoutProps {
   children: ReactNode;
@@ -19,8 +20,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const navigation = [
     { name: 'Home', href: '/', icon: Home },
+    { name: 'Process Paper', href: '/process', icon: Plus },
     { name: 'Papers', href: '/papers', icon: FileText },
-    { name: 'Statistics', href: '/statistics', icon: BarChart3 },
     { name: 'Settings', href: '/settings', icon: Settings },
   ];
 
@@ -121,6 +122,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         {/* Page content */}
         <main className="py-6">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <Banner /> {/* Add the Banner component here */}
             {children}
           </div>
         </main>

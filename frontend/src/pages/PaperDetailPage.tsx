@@ -133,7 +133,7 @@ export const PaperDetailPage: React.FC = () => {
         </div>
         
         <div className="card bg-red-50 border-red-200">
-          <div className="card-content">
+          <div className="card-content py-2">
             <div className="flex items-center space-x-2 text-red-700">
               <AlertCircle className="w-5 h-5" />
               <p>{error || 'Paper not found'}</p>
@@ -190,7 +190,7 @@ export const PaperDetailPage: React.FC = () => {
 
       {/* Paper Metadata */}
       <div className="card">
-        <div className="card-content">
+        <div className="card-content py-5">
           <div className="flex items-start space-x-3">
             <FileText className="w-6 h-6 text-gray-400 mt-1" />
             <div className="flex-1">

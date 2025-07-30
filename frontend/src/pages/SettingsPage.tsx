@@ -14,17 +14,24 @@ import {
   getAvailableModels,
   handleApiError,
 } from '@/services/api';
+import { useNotification } from '@/context/NotificationContext';
 
 export const SettingsPage: React.FC = () => {
   const [config, setConfig] = useState<ConfigurationResponse | null>(null);
   const [validation, setValidation] = useState<ConfigurationValidation | null>(null);
   const [availableModels, setAvailableModels] = useState<AvailableModelsResponse | null>(null);
   const [loadingState, setLoadingState] = useState<LoadingState>('idle');
+  const [modelsLoadingState, setModelsLoadingState] = useState<LoadingState>('idle');
   const [saveState, setSaveState] = useState<LoadingState>('idle');
+  const [reloadingModels, setReloadingModels] = useState<LoadingState>('idle');
   const [saveProgress, setSaveProgress] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'api' | 'processing' | 'image' | 'system'>('api');
+  const [useCustomDefaultModel, setUseCustomDefaultModel] = useState<boolean>(false);
+  const [useCustomTranslateModel, setUseCustomTranslateModel] = useState<boolean>(false);
+
+  const { showNotification } = useNotification();
 
   // Form state
   const [formData, setFormData] = useState<ConfigurationRequest>({});
@@ -33,6 +40,18 @@ export const SettingsPage: React.FC = () => {
     loadConfiguration();
     loadAvailableModels();
   }, []);
+
+  // Effect to check if current models are custom (not in available models list)
+  useEffect(() => {
+    if (availableModels && formData.default_model) {
+      const isDefaultModelInList = availableModels.models.some(model => model.id === formData.default_model);
+      setUseCustomDefaultModel(!isDefaultModelInList);
+    }
+    if (availableModels && formData.translate_model) {
+      const isTranslateModelInList = availableModels.models.some(model => model.id === formData.translate_model);
+      setUseCustomTranslateModel(!isTranslateModelInList);
+    }
+  }, [availableModels, formData.default_model, formData.translate_model]);
 
   const loadConfiguration = async () => {
     setLoadingState('loading');
@@ -71,26 +90,92 @@ export const SettingsPage: React.FC = () => {
   };
 
   const loadAvailableModels = async (useFormData: boolean = true) => {
+    setModelsLoadingState('loading');
+    
     try {
       // Use form data for real-time preview, or saved config for post-save refresh
       const apiKey = useFormData ? formData.openai_api_key : config?.openai_api_key;
       const apiBase = useFormData ? formData.openai_api_base : config?.openai_api_base;
       
-      const models = await getAvailableModels(apiKey, apiBase);
+      const models = await getAvailableModels(apiKey, apiBase, showNotification);
       setAvailableModels(models);
-      
-      // Show error message if there's an issue with fetching models
-      if (models.error) {
-        console.warn('Model loading issue:', models.error);
-      }
+      setModelsLoadingState('success');
     } catch (err) {
-      console.error('Failed to load available models:', err);
       // Set fallback models in case of complete failure
       setAvailableModels({
         models: [],
         custom_note: 'Failed to load models. Please check your API configuration.',
         error: 'Network error'
       });
+      setModelsLoadingState('error');
+    }
+  };
+
+  const handleReloadModels = async () => {
+    setReloadingModels('loading');
+    setError(null);
+    setSuccessMessage(null);
+
+    try {
+      // First save the current form data if there are changes
+      const updates: ConfigurationRequest = {};
+      
+      if (formData.openai_api_key !== config?.openai_api_key) {
+        updates.openai_api_key = formData.openai_api_key;
+      }
+      if (formData.openai_api_base !== config?.openai_api_base) {
+        updates.openai_api_base = formData.openai_api_base;
+      }
+      if (formData.default_model !== config?.default_model) {
+        updates.default_model = formData.default_model;
+      }
+      if (formData.translate_model !== config?.translate_model) {
+        updates.translate_model = formData.translate_model;
+      }
+      if (formData.max_paper_length !== config?.max_paper_length) {
+        updates.max_paper_length = formData.max_paper_length;
+      }
+      if (formData.max_image_size_mb !== config?.max_image_size_mb) {
+        updates.max_image_size_mb = formData.max_image_size_mb;
+      }
+      if (formData.request_timeout !== config?.request_timeout) {
+        updates.request_timeout = formData.request_timeout;
+      }
+      if (formData.default_output_format !== config?.default_output_format) {
+        updates.default_output_format = formData.default_output_format;
+      }
+      if (formData.default_language !== config?.default_language) {
+        updates.default_language = formData.default_language;
+      }
+      if (formData.image_quality !== config?.image_quality) {
+        updates.image_quality = formData.image_quality;
+      }
+      if (formData.max_image_dimension !== config?.max_image_dimension) {
+        updates.max_image_dimension = formData.max_image_dimension;
+      }
+      if (formData.log_level !== config?.log_level) {
+        updates.log_level = formData.log_level;
+      }
+
+      // Save configuration if there are changes
+      if (Object.keys(updates).length > 0) {
+        const updatedConfig = await updateConfiguration(updates);
+        setConfig(updatedConfig);
+        
+        // Refresh validation
+        const newValidation = await validateConfiguration();
+        setValidation(newValidation);
+      }
+      
+      // Now reload models with the saved configuration
+      await loadAvailableModels(false);
+      
+      setSuccessMessage('Models reloaded successfully');
+      setReloadingModels('success');
+      
+    } catch (err) {
+      setError(handleApiError(err));
+      setReloadingModels('error');
     }
   };
 
@@ -156,12 +241,6 @@ export const SettingsPage: React.FC = () => {
       const newValidation = await validateConfiguration();
       setValidation(newValidation);
       
-      // Refresh model list with the newly saved configuration if API settings were updated
-      if (updates.openai_api_key || updates.openai_api_base) {
-        setSaveProgress('Fetching available models...');
-        await loadAvailableModels(false);
-      }
-      
       setSuccessMessage('Configuration saved successfully');
       setSaveState('success');
       setSaveProgress('');
@@ -199,6 +278,10 @@ export const SettingsPage: React.FC = () => {
         max_image_dimension: resetConfig.max_image_dimension,
         log_level: resetConfig.log_level,
       });
+      
+      // Reset toggle states - they will be updated by the useEffect
+      setUseCustomDefaultModel(false);
+      setUseCustomTranslateModel(false);
       setSuccessMessage('Configuration reset to defaults');
       setSaveState('success');
       
@@ -215,13 +298,6 @@ export const SettingsPage: React.FC = () => {
   const updateFormField = (field: keyof ConfigurationRequest, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     
-    // Refresh model list when API configuration changes
-    if (field === 'openai_api_base' || field === 'openai_api_key') {
-      // Debounce the model refresh to avoid too many API calls
-      setTimeout(() => {
-        loadAvailableModels();
-      }, 1000);
-    }
   };
 
   if (loadingState === 'loading') {
@@ -412,43 +488,134 @@ export const SettingsPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Default Model
-                </label>
-                <select
-                  value={formData.default_model || ''}
-                  onChange={(e) => updateFormField('default_model', e.target.value)}
-                  className="input w-full"
-                >
-                  {availableModels?.models.map((model) => (
-                    <option key={model.id} value={model.id}>
-                      {model.id} {model.recommended ? '(Recommended)' : ''}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Default Model
+                  </label>
+                  <div className="flex items-center space-x-3">
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={useCustomDefaultModel}
+                        onChange={(e) => setUseCustomDefaultModel(e.target.checked)}
+                        className="mr-2"
+                      />
+                      <span className="text-sm text-gray-600">Use custom model ID</span>
+                    </label>
+                    <button
+                      onClick={handleReloadModels}
+                      disabled={reloadingModels === 'loading' || modelsLoadingState === 'loading'}
+                      className="btn btn-sm btn-secondary flex items-center"
+                      title="Save configuration and reload models"
+                    >
+                      {(reloadingModels === 'loading' || modelsLoadingState === 'loading') ? (
+                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-600 mr-1"></div>
+                      ) : (
+                        <span className="mr-1">🔄</span>
+                      )}
+                      {reloadingModels === 'loading' ? 'Reloading...' : 'Reload Models'}
+                    </button>
+                  </div>
+                </div>
+                
+                {useCustomDefaultModel ? (
+                  <input
+                    type="text"
+                    value={formData.default_model || ''}
+                    onChange={(e) => updateFormField('default_model', e.target.value)}
+                    className="input w-full"
+                    placeholder="Enter custom model ID (e.g., gpt-4, claude-3-sonnet, etc.)"
+                  />
+                ) : (
+                  <select
+                    value={formData.default_model || ''}
+                    onChange={(e) => updateFormField('default_model', e.target.value)}
+                    disabled={modelsLoadingState === 'loading'}
+                    className={`input w-full ${modelsLoadingState === 'loading' ? 'bg-gray-100' : ''}`}
+                  >
+                    {modelsLoadingState === 'loading' ? (
+                      <option value="">Loading models...</option>
+                    ) : availableModels?.error ? (
+                      <option value="">Failed to load models</option>
+                    ) : (
+                      availableModels?.models.map((model) => (
+                        <option key={model.id} value={model.id}>
+                          {model.id} {model.recommended ? '(Recommended)' : ''}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                )}
+                
                 <p className="text-sm text-gray-500 mt-1">
-                  Default model for paper processing
+                  {useCustomDefaultModel 
+                    ? 'Enter a custom model ID that your API provider supports'
+                    : 'Default model for paper processing'
+                  }
                 </p>
+                {availableModels?.error && !useCustomDefaultModel && (
+                  <p className="text-sm text-red-600 mt-1">
+                    Error: {availableModels.error}
+                  </p>
+                )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Translation Model
-                </label>
-                <select
-                  value={formData.translate_model || ''}
-                  onChange={(e) => updateFormField('translate_model', e.target.value)}
-                  className="input w-full"
-                >
-                  {availableModels?.models.map((model) => (
-                    <option key={model.id} value={model.id}>
-                      {model.id} {model.recommended ? '(Recommended)' : ''}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Translation Model
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={useCustomTranslateModel}
+                      onChange={(e) => setUseCustomTranslateModel(e.target.checked)}
+                      className="mr-2"
+                    />
+                    <span className="text-sm text-gray-600">Use custom model ID</span>
+                  </label>
+                </div>
+                
+                {useCustomTranslateModel ? (
+                  <input
+                    type="text"
+                    value={formData.translate_model || ''}
+                    onChange={(e) => updateFormField('translate_model', e.target.value)}
+                    className="input w-full"
+                    placeholder="Enter custom model ID (e.g., gpt-4, claude-3-sonnet, etc.)"
+                  />
+                ) : (
+                  <select
+                    value={formData.translate_model || ''}
+                    onChange={(e) => updateFormField('translate_model', e.target.value)}
+                    disabled={modelsLoadingState === 'loading'}
+                    className={`input w-full ${modelsLoadingState === 'loading' ? 'bg-gray-100' : ''}`}
+                  >
+                    {modelsLoadingState === 'loading' ? (
+                      <option value="">Loading models...</option>
+                    ) : availableModels?.error ? (
+                      <option value="">Failed to load models</option>
+                    ) : (
+                      availableModels?.models.map((model) => (
+                        <option key={model.id} value={model.id}>
+                          {model.id} {model.recommended ? '(Recommended)' : ''}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                )}
+                
                 <p className="text-sm text-gray-500 mt-1">
-                  Model used for translation tasks
+                  {useCustomTranslateModel 
+                    ? 'Enter a custom model ID that your API provider supports'
+                    : 'Model used for translation tasks'
+                  }
                 </p>
+                {availableModels?.error && !useCustomTranslateModel && (
+                  <p className="text-sm text-red-600 mt-1">
+                    Error: {availableModels.error}
+                  </p>
+                )}
               </div>
 
             </div>
