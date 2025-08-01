@@ -17,7 +17,7 @@ from ..paper_extractor import OpenAIExtractor
 from ..html_generator import HTMLGenerator
 from ..pdf_generator import PDFGenerator
 from ..image_processor import ImageProcessor
-from ..metadata_logger import MetadataLogger
+from ..database import DatabaseMetadataManager
 from .models import (
     PaperProcessRequest,
     ProcessingStatus,
@@ -35,7 +35,7 @@ class PaperProcessingService:
     def __init__(self, output_dir: str = "output"):
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(exist_ok=True)
-        self.metadata_logger = MetadataLogger()
+        self.metadata_logger = DatabaseMetadataManager()
         self.active_processes: Dict[str, ProcessingProgress] = {}
         self.active_papers: Dict[str, PaperMetadata] = {}
         
@@ -45,18 +45,30 @@ class PaperProcessingService:
         if request.input_type == InputType.ARXIV:
             title = f"ArXiv Paper: {request.input_source.split('/')[-1]}"
         elif request.input_type == InputType.URL:
-            title = "Processing URL..."
+            title = f"URL Paper: {request.input_source}"
         elif request.input_type == InputType.PDF:
-            title = "Processing uploaded PDF..."
+            title = "Uploaded PDF Paper"
         else:
             title = "Processing..."
+        
+        # Determine input URL for logging
+        input_url = None
+        if request.input_type == InputType.ARXIV:
+            input_url = request.input_source
+        elif request.input_type == InputType.URL:
+            input_url = request.input_source
+        
+        # Calculate expected output paths
+        paper_folder = self.output_dir / paper_id
+        expected_output_path = str(paper_folder / "summary.html")
+        expected_pdf_path = str(paper_folder / "summary.pdf")
         
         # Create paper metadata
         paper_metadata = PaperMetadata(
             paper_id=paper_id,
             title=title,
             authors=[],  # Will be filled when extraction completes
-            arxiv_url=request.input_source if request.input_type == InputType.ARXIV else None,
+            arxiv_url=input_url,
             format_used=request.input_type.value,
             output_format=request.output_format,
             language=request.language,
@@ -64,6 +76,22 @@ class PaperProcessingService:
             created_at=datetime.now(),
             file_size=None,
             status=ProcessingStatus.PENDING
+        )
+        
+        # LOG TO DATABASE IMMEDIATELY with basic metadata
+        self.metadata_logger.log_paper(
+            paper_id=paper_id,
+            title=title,
+            authors=[],
+            arxiv_url=input_url,
+            format_used=request.input_type.value,
+            output_format=request.output_format.value,
+            output_path=expected_output_path,
+            pdf_path=expected_pdf_path,
+            extracted_data={},  # Empty for now, will be updated on completion
+            processing_time=0.0,
+            language=request.language.value,
+            status="pending"
         )
         
         # Store in active papers
@@ -207,7 +235,13 @@ class PaperProcessingService:
                     # Convert ExtractedData to dict for JSON serialization
                     json.dump(extracted_data.model_dump(), f, ensure_ascii=False, indent=2)
             
-            # Log metadata
+            # Update the existing database record with completion data
+            # First update status to completed
+            self.metadata_logger.update_paper_status(paper_id, "completed")
+            
+            # Then update with extracted data and final paths (we'll need a new method for this)
+            # For now, we'll delete the old record and insert the complete one
+            self.metadata_logger.delete_paper(paper_id)
             self.metadata_logger.log_paper(
                 paper_id=paper_id,
                 title=extracted_data.title,
@@ -219,7 +253,8 @@ class PaperProcessingService:
                 pdf_path=str(pdf_path) if pdf_path else None,
                 extracted_data=extracted_data.model_dump(),
                 processing_time=processing_time,
-                language=request.language.value
+                language=request.language.value,
+                status="completed"
             )
             
             await self._update_progress(
@@ -239,10 +274,14 @@ class PaperProcessingService:
             # Calculate processing time up to failure
             processing_time = (datetime.now() - start_time).total_seconds()
             
+            # Calculate expected output paths even for failed papers
+            expected_output_path = str(paper_folder / "summary.html")
+            expected_pdf_path = str(paper_folder / "summary.pdf")
+            
             # Get the paper metadata for logging the failure
             paper_metadata = self.active_papers.get(paper_id)
             if paper_metadata:
-                # Log the failed paper to metadata logger with detailed error information
+                # Log the failed paper to metadata logger with detailed error information and expected paths
                 self.metadata_logger.log_failed_paper(
                     paper_id=paper_id,
                     title=paper_metadata.title,
@@ -250,19 +289,37 @@ class PaperProcessingService:
                     arxiv_url=paper_metadata.arxiv_url,
                     format_used=paper_metadata.format_used,
                     output_format=request.output_format.value,
+                    expected_output_path=expected_output_path,
+                    expected_pdf_path=expected_pdf_path,
                     error_message=str(e),
                     processing_time=processing_time,
                     language=request.language.value
                 )
             else:
-                # Fallback if no paper metadata available
+                # Fallback if no paper metadata available - still capture essential info
+                input_url = request.input_source if request.input_type == InputType.ARXIV else None
+                # For non-arxiv sources, try to capture the input source as well
+                if request.input_type == InputType.URL:
+                    input_url = request.input_source
+                
+                # Try to extract a meaningful title from the input source
+                title = "Unknown Paper"
+                if request.input_type == InputType.ARXIV:
+                    title = f"ArXiv Paper: {request.input_source.split('/')[-1]}"
+                elif request.input_type == InputType.URL:
+                    title = f"URL Paper: {request.input_source}"
+                elif request.input_type == InputType.PDF:
+                    title = "Uploaded PDF Paper"
+                
                 self.metadata_logger.log_failed_paper(
                     paper_id=paper_id,
-                    title="Unknown Paper",
+                    title=title,
                     authors=[],
-                    arxiv_url=request.input_source if request.input_type == InputType.ARXIV else None,
+                    arxiv_url=input_url,
                     format_used=request.input_type.value,
                     output_format=request.output_format.value,
+                    expected_output_path=expected_output_path,
+                    expected_pdf_path=expected_pdf_path,
                     error_message=str(e),
                     processing_time=processing_time,
                     language=request.language.value
@@ -576,19 +633,28 @@ class PaperProcessingService:
         return self.metadata_logger.get_paper_by_id(paper_id)
 
     def delete_paper(self, paper_id: str) -> bool:
-        """Delete a paper and its associated files."""
+        """Delete a paper and its associated files and database record."""
         paper_folder = self.output_dir / paper_id
+        success = False
         
+        # Delete from database first
+        if self.metadata_logger.delete_paper(paper_id):
+            success = True
+        
+        # Delete files if folder exists
         if paper_folder.exists():
             shutil.rmtree(paper_folder)
-            
-            # Remove from active processes if present
-            if paper_id in self.active_processes:
-                del self.active_processes[paper_id]
-            
-            return True
+            success = True
         
-        return False
+        # Remove from active processes if present
+        if paper_id in self.active_processes:
+            del self.active_processes[paper_id]
+        
+        # Remove from active papers if present
+        if paper_id in self.active_papers:
+            del self.active_papers[paper_id]
+        
+        return success
 
 
 class FileService:

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FileText, Loader2, AlertCircle, Eye, RotateCcw, Clock } from 'lucide-react';
+import { FileText, Loader2, AlertCircle, Eye, RotateCcw, Clock, Trash2 } from 'lucide-react';
 import { 
   listPapers, 
   createProgressWebSocket, 
   handleApiError,
-  retryPaper
+  retryPaper,
+  deletePaper
 } from '@/services/api';
 import { 
   PaperMetadata, 
@@ -214,6 +215,39 @@ export const PapersPage: React.FC = () => {
     }
   };
 
+  const handleDeletePaper = async (paperId: string, paperTitle: string) => {
+    // Show confirmation dialog
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete "${paperTitle}"?\n\n` +
+      'This will permanently remove:\n' +
+      '• The paper record from the database\n' +
+      '• All generated files (HTML, PDF, images)\n' +
+      '• All associated metadata\n\n' +
+      'This action cannot be undone.'
+    );
+
+    if (!confirmDelete) {
+      return;
+    }
+
+    try {
+      setError(null);
+      await deletePaper(paperId);
+      
+      // Show success notification
+      showNotification(`Paper "${paperTitle}" has been deleted successfully.`, 'success');
+      
+      // Reload papers to reflect the deletion
+      loadPapers();
+      
+    } catch (err) {
+      const errorMessage = handleApiError(err);
+      setError(`Failed to delete paper: ${errorMessage}`);
+      showNotification(`Failed to delete paper: ${errorMessage}`, 'error');
+      console.error('Error deleting paper:', err);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -373,6 +407,17 @@ export const PapersPage: React.FC = () => {
                         Retry
                       </button>
                     )}
+                    <button
+                      className="btn btn-outline btn-sm text-red-600 hover:text-red-700 hover:border-red-300"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeletePaper(paper.paper_id, paper.title);
+                      }}
+                      title="Delete this paper permanently"
+                    >
+                      <Trash2 className="w-4 h-4 mr-1" />
+                      Delete
+                    </button>
                     <span className={getStatusBadgeClass(paper.status)}>
                       {getStatusDisplayName(paper.status)}
                     </span>
