@@ -37,7 +37,7 @@ dependencies = [
     "jinja2>=3.1.0",
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 ocr = [
     "surya-ocr>=0.14.6",
     "torch>=2.0.0",
@@ -52,7 +52,8 @@ dev = [
     "pre-commit>=3.0.0",
 ]
 all = [
-    "btmr-paper[ocr,dev]"
+    {include-group = "ocr"},
+    {include-group = "dev"},
 ]
 
 [project.scripts]
