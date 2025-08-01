@@ -163,7 +163,7 @@ main() {
     # Install Python dependencies using uv
     print_status "Installing Python dependencies with uv..."
     if [ -f "pyproject.toml" ]; then
-        uv sync >/dev/null 2>&1 || {
+        uv sync --group all >/dev/null 2>&1 || {
             print_error "Failed to install Python dependencies with uv"
             exit 1
         }
