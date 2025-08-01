@@ -186,17 +186,19 @@ export const ProcessPaperPage: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Upload PDF File
               </label>
-              <div className="dropzone">
-                <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                <p className="text-sm text-gray-600">
-                  Click to upload or drag and drop your PDF file here
-                </p>
+              <div className="relative">
                 <input
                   type="file"
                   accept=".pdf"
-                  className="hidden"
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                   onChange={handleFileSelect}
                 />
+                <div className="dropzone">
+                  <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                  <p className="text-sm text-gray-600">
+                    {selectedFile ? selectedFile.name : "Click to upload or drag and drop your PDF file here"}
+                  </p>
+                </div>
               </div>
             </div>
           )}

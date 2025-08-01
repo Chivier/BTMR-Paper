@@ -356,6 +356,11 @@ class PaperProcessingService:
                 content, image_mapping = image_processor.process_markdown(request.input_source)
                 return content, "markdown", image_mapping
                 
+            elif request.input_type == InputType.PDF:
+                # For PDF input, input_source should be the file path from uploaded file
+                content, format_used, image_mapping = image_processor.process_pdf(request.input_source)
+                return content, format_used, image_mapping
+                
             else:
                 raise ValueError(f"Unsupported input type: {request.input_type}")
         except Exception as e:
@@ -365,6 +370,8 @@ class PaperProcessingService:
                 raise Exception(f"Failed to fetch content from URL '{request.input_source}': {str(e)}")
             elif request.input_type == InputType.MARKDOWN:
                 raise Exception(f"Failed to process markdown content: {str(e)}")
+            elif request.input_type == InputType.PDF:
+                raise Exception(f"Failed to process PDF file '{request.input_source}': {str(e)}")
             else:
                 raise Exception(f"Failed to fetch content for input type '{request.input_type}': {str(e)}")
     

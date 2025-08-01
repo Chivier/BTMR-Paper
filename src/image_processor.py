@@ -3,8 +3,9 @@
 import os
 import re
 import base64
+import tempfile
 from pathlib import Path
-from typing import Tuple
+from typing import Tuple, Dict
 from urllib.parse import urljoin
 
 import requests
@@ -15,6 +16,10 @@ try:
     from surya.detection import DetectionPredictor
     from surya.recognition import RecognitionPredictor
     from surya.input.load import load_from_file
+    from surya.model.detection.model import load_model as load_det_model, load_processor as load_det_processor
+    from surya.model.recognition.model import load_model as load_rec_model
+    from surya.model.recognition.processor import load_processor as load_rec_processor
+    from surya.input.load import load_pdf
     SURYA_AVAILABLE = True
 except (ImportError, RuntimeError) as e:
     print(f"Warning: Surya OCR not available: {e}")
@@ -103,3 +108,135 @@ class ImageProcessor:
 
         return title, markdown_content, image_mapping
 
+    def process_pdf(self, pdf_path: str) -> Tuple[str, str, Dict]:
+        """
+        Process uploaded PDF file and extract text content.
+        
+        Args:
+            pdf_path: Path to the uploaded PDF file
+            
+        Returns:
+            Tuple of (content, format_used, image_mapping)
+        """
+        print(f"Processing uploaded PDF: {pdf_path}")
+        
+        if not os.path.exists(pdf_path):
+            raise FileNotFoundError(f"PDF file not found: {pdf_path}")
+        
+        image_mapping = {}
+        
+        # Try Surya OCR first (advanced OCR with better accuracy)
+        if SURYA_AVAILABLE:
+            try:
+                print("Using Surya OCR for PDF processing...")
+                
+                # Load models
+                det_model, det_processor = load_det_model(), load_det_processor()
+                rec_model, rec_processor = load_rec_model(), load_rec_processor()
+                
+                # Load PDF pages as images
+                images = load_pdf(pdf_path)
+                print(f"Loaded {len(images)} pages from PDF")
+                
+                # Perform OCR on each page
+                det_predictor = DetectionPredictor(det_model, det_processor)
+                rec_predictor = RecognitionPredictor(rec_model, rec_processor)
+                
+                # Process text detection and recognition
+                det_results = det_predictor(images)
+                rec_results = rec_predictor(images, det_results)
+                
+                # Extract text from all pages
+                full_text = []
+                for page_idx, page_result in enumerate(rec_results):
+                    page_text = []
+                    for line in page_result.text_lines:
+                        page_text.append(line.text)
+                    
+                    if page_text:
+                        full_text.append(f"=== Page {page_idx + 1} ===")
+                        full_text.extend(page_text)
+                        full_text.append("")  # Add blank line between pages
+                    
+                    # Save page image for reference
+                    if hasattr(page_result, 'image') and page_result.image:
+                        img_filename = f"pdf_page_{page_idx + 1}.png"
+                        img_path = self.output_dir / img_filename
+                        page_result.image.save(img_path)
+                        image_mapping[f"page_{page_idx + 1}"] = {
+                            "url": str(img_path),
+                            "caption": f"PDF Page {page_idx + 1}",
+                            "caption_tag": f"Figure {page_idx + 1}:"
+                        }
+                
+                content = "\n".join(full_text)
+                if content.strip():
+                    print(f"Surya OCR extracted {len(content)} characters from PDF")
+                    return content, "pdf", image_mapping
+                else:
+                    print("Surya OCR produced empty content, falling back to PyPDF2...")
+                    
+            except Exception as e:
+                print(f"Surya OCR failed: {e}, falling back to PyPDF2...")
+        
+        # Fallback to PyPDF2 for basic text extraction
+        try:
+            import PyPDF2
+            print("Using PyPDF2 for PDF text extraction...")
+            
+            text_content = []
+            with open(pdf_path, 'rb') as pdf_file:
+                pdf_reader = PyPDF2.PdfReader(pdf_file)
+                
+                print(f"PDF has {len(pdf_reader.pages)} pages")
+                
+                for page_num in range(len(pdf_reader.pages)):
+                    page = pdf_reader.pages[page_num]
+                    text = page.extract_text()
+                    
+                    if text.strip():
+                        text_content.append(f"=== Page {page_num + 1} ===")
+                        text_content.append(text)
+                        text_content.append("")  # Add blank line between pages
+            
+            content = "\n".join(text_content)
+            
+            if content.strip():
+                print(f"PyPDF2 extracted {len(content)} characters from PDF")
+                return content, "pdf", image_mapping
+            else:
+                raise Exception("PDF appears to be image-based or corrupted - no text could be extracted")
+                
+        except ImportError:
+            raise Exception("PyPDF2 not available. Please install it with: pip install PyPDF2")
+        except Exception as e:
+            raise Exception(f"PDF text extraction failed: {str(e)}")
+
+    def _download_image(self, img_url: str, base_filename: str) -> Path:
+        """Download image from URL and save locally."""
+        try:
+            response = requests.get(img_url, timeout=10)
+            response.raise_for_status()
+            
+            # Determine file extension
+            content_type = response.headers.get('content-type', '')
+            if 'jpeg' in content_type or 'jpg' in content_type:
+                ext = '.jpg'
+            elif 'png' in content_type:
+                ext = '.png'
+            elif 'gif' in content_type:
+                ext = '.gif'
+            else:
+                ext = '.jpg'  # Default fallback
+            
+            filename = f"{base_filename}{ext}"
+            img_path = self.output_dir / filename
+            
+            with open(img_path, 'wb') as f:
+                f.write(response.content)
+            
+            return img_path
+            
+        except Exception as e:
+            print(f"Failed to download image {img_url}: {e}")
+            return None
