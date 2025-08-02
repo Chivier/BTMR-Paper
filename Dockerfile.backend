@@ -25,11 +25,14 @@ COPY . .
 # Install Python dependencies using uv
 RUN uv sync --frozen
 
-# Expose port
+# Expose port (default 8000, can be overridden)
 EXPOSE 8000
 
 # Create necessary directories
 RUN mkdir -p output uploads logs
 
+# Set default port
+ENV BACKEND_PORT=8000
+
 # Run the application
-CMD ["uv", "run", "python", "-m", "src.api.main", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "uv run python -m src.api.main --host 0.0.0.0 --port ${BACKEND_PORT:-8000}"]

@@ -5,6 +5,15 @@
 
 set -e  # Exit on any error
 
+# Load environment variables
+if [ -f .env ]; then
+    export $(grep -v '^#' .env | xargs)
+fi
+
+# Set default ports if not specified
+BACKEND_PORT=${BACKEND_PORT:-8000}
+FRONTEND_PORT=${FRONTEND_PORT:-3000}
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -118,8 +127,8 @@ cleanup() {
     fi
     
     # Kill frontend if running
-    kill_port 3000
-    kill_port 8000
+    kill_port $FRONTEND_PORT
+    kill_port $BACKEND_PORT
     
     print_success "Services stopped"
 }
@@ -227,16 +236,16 @@ except Exception as e:
     print_success "Database initialized successfully"
     
     # Kill any existing services on the ports we need
-    kill_port 8000
-    kill_port 3000
+    kill_port $BACKEND_PORT
+    kill_port $FRONTEND_PORT
     
     # Start backend server
-    print_status "Starting backend server on port 8000..."
-    nohup uv run uvicorn src.api.main:app --host 0.0.0.0 --port 8000 > logs/backend.log 2>&1 &
+    print_status "Starting backend server on port $BACKEND_PORT..."
+    nohup uv run uvicorn src.api.main:app --host 0.0.0.0 --port $BACKEND_PORT > logs/backend.log 2>&1 &
     BACKEND_PID=$!
     
     # Wait for backend to be ready
-    if ! wait_for_service "http://localhost:8000/health" "Backend"; then
+    if ! wait_for_service "http://localhost:$BACKEND_PORT/health" "Backend"; then
         print_error "Backend failed to start"
         exit 1
     fi
@@ -255,12 +264,12 @@ except Exception as e:
     fi
     
     # Start frontend server
-    print_status "Starting frontend server on port 3000..."
-    npm run dev -- --host 0.0.0.0 --port 3000 > ../logs/frontend.log 2>&1 &
+    print_status "Starting frontend server on port $FRONTEND_PORT..."
+    npm run dev -- --host 0.0.0.0 --port $FRONTEND_PORT > ../logs/frontend.log 2>&1 &
     FRONTEND_PID=$!
     
     # Wait for frontend to be ready
-    if ! wait_for_service "http://localhost:3000" "Frontend"; then
+    if ! wait_for_service "http://localhost:$FRONTEND_PORT" "Frontend"; then
         print_error "Frontend failed to start"
         exit 1
     fi
@@ -270,9 +279,9 @@ except Exception as e:
     print_success "BTMR Paper Service Started Successfully!"
     echo "=============================================="
     echo ""
-    echo "🌐 Frontend: http://localhost:3000"
-    echo "🔧 Backend API: http://localhost:8000"
-    echo "📚 API Documentation: http://localhost:8000/docs"
+    echo "🌐 Frontend: http://localhost:$FRONTEND_PORT"
+    echo "🔧 Backend API: http://localhost:$BACKEND_PORT"
+    echo "📚 API Documentation: http://localhost:$BACKEND_PORT/docs"
     echo "📊 Database: SQLite (output/paper_metadata.db)"
     echo ""
     echo "📋 Logs:"
@@ -304,21 +313,21 @@ except Exception as e:
 case "${1:-}" in
     "stop")
         print_status "Stopping BTMR Paper services..."
-        kill_port 8000
-        kill_port 3000
+        kill_port $BACKEND_PORT
+        kill_port $FRONTEND_PORT
         print_success "All services stopped"
         exit 0
         ;;
     "status")
         echo "Service Status:"
-        if is_port_in_use 8000; then
-            print_success "Backend: Running on port 8000"
+        if is_port_in_use $BACKEND_PORT; then
+            print_success "Backend: Running on port $BACKEND_PORT"
         else
             print_error "Backend: Not running"
         fi
         
-        if is_port_in_use 3000; then
-            print_success "Frontend: Running on port 3000"
+        if is_port_in_use $FRONTEND_PORT; then
+            print_success "Frontend: Running on port $FRONTEND_PORT"
         else
             print_error "Frontend: Not running"
         fi
@@ -326,8 +335,8 @@ case "${1:-}" in
         ;;
     "restart")
         print_status "Restarting BTMR Paper services..."
-        kill_port 8000
-        kill_port 3000
+        kill_port $BACKEND_PORT
+        kill_port $FRONTEND_PORT
         sleep 3
         exec "$0"
         ;;
