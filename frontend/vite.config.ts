@@ -27,4 +27,19 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: true,
   },
+  preview: {
+    port: parseInt(process.env.FRONTEND_PORT || '3000'),
+    proxy: {
+      '/api': {
+        target: process.env.VITE_API_BASE_URL || `http://localhost:${process.env.BACKEND_PORT || '8000'}`,
+        changeOrigin: true,
+        rewrite: (path) => path,
+      },
+      '/files': {
+        target: process.env.VITE_API_BASE_URL || `http://localhost:${process.env.BACKEND_PORT || '8000'}`,
+        changeOrigin: true,
+        rewrite: (path) => path,
+      },
+    },
+  },
 })
