@@ -18,6 +18,7 @@ from typing import Dict, Any, List
 from datetime import datetime
 import base64
 import requests
+from PIL import Image
 
 class HTMLGenerator:
     """
@@ -668,6 +669,7 @@ class HTMLGenerator:
         import re
         import shutil
         import mimetypes
+        from PIL import Image
         
         # Check if the URL is actually a valid image URL or path
         if not image_url or "(Not available" in image_url or "placeholder" in image_url.lower():
@@ -680,11 +682,23 @@ class HTMLGenerator:
                 # Handle both dict format (new) and string format (old)
                 mapping_info = self.image_mapping[image_url]
                 if isinstance(mapping_info, dict):
-                    source_path = image_url  # The key itself is the local path in new format
+                    source_path = mapping_info.get('url', image_url)  # Extract URL from dict
                 else:
                     source_path = mapping_info  # Old format: direct path
                     
                 if os.path.exists(source_path):
+                    # Check image aspect ratio
+                    img_style = ''
+                    try:
+                        with Image.open(source_path) as img:
+                            width, height = img.size
+                            aspect_ratio = width / height
+                            # If aspect ratio < 1.5 (3:2), image is tall, use 70% width
+                            if aspect_ratio < 1.5:
+                                img_style = ' style="max-width: 70%;"'
+                    except Exception as e:
+                        print(f"Warning: Could not read image dimensions for {source_path}: {e}")
+                    
                     # Read the image and convert to base64
                     with open(source_path, "rb") as f:
                         img_data = base64.b64encode(f.read()).decode("utf-8")
@@ -727,7 +741,7 @@ class HTMLGenerator:
                     
                     return f'''
             <figure class="paper-figure">
-                <img src="{img_src}" alt="{caption}">
+                <img src="{img_src}" alt="{caption}"{img_style}>
                 <figcaption>{caption}</figcaption>
             </figure>'''
             
@@ -751,9 +765,27 @@ class HTMLGenerator:
                     with open(img_path, 'wb') as f:
                         f.write(img_data)
                     
+                    # Check image aspect ratio
+                    img_style = ''
+                    try:
+                        with Image.open(img_path) as img:
+                            width, height = img.size
+                            aspect_ratio = width / height
+                            # If aspect ratio < 1.5 (3:2), image is tall, use 70% width
+                            if aspect_ratio < 1.5:
+                                img_style = ' style="max-width: 70%;"'
+                    except Exception as e:
+                        print(f"Warning: Could not read image dimensions for {img_path}: {e}")
+                    
                     # Always use base64 encoding to ensure portability
                     img_data_b64 = base64.b64encode(img_data).decode("utf-8")
                     img_src = f"data:image/png;base64,{img_data_b64}"
+                    
+                    return f'''
+            <figure class="paper-figure">
+                <img src="{img_src}" alt="{caption}"{img_style}>
+                <figcaption>{caption}</figcaption>
+            </figure>'''
             else:
                 # Handle local file paths (e.g., images/fig1.png)
                 # Try multiple possible paths
@@ -764,8 +796,20 @@ class HTMLGenerator:
                 ]
                 
                 file_found = False
+                img_style = ''
                 for path in possible_paths:
                     if os.path.exists(path):
+                        # Check image aspect ratio
+                        try:
+                            with Image.open(path) as img:
+                                width, height = img.size
+                                aspect_ratio = width / height
+                                # If aspect ratio < 1.5 (3:2), image is tall, use 70% width
+                                if aspect_ratio < 1.5:
+                                    img_style = ' style="max-width: 70%;"'
+                        except Exception as e:
+                            print(f"Warning: Could not read image dimensions for {path}: {e}")
+                        
                         # Always use base64 encoding
                         with open(path, "rb") as f:
                             img_data = base64.b64encode(f.read()).decode("utf-8")
@@ -788,7 +832,7 @@ class HTMLGenerator:
             
             return f'''
             <figure class="paper-figure">
-                <img src="{img_src}" alt="{caption}">
+                <img src="{img_src}" alt="{caption}"{img_style}>
                 <figcaption>{caption}</figcaption>
             </figure>'''
         except Exception as e:

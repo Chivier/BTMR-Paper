@@ -35,3 +35,4 @@ frontend/dist
 
 logs
 uploads
+.vite

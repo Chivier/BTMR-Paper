@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./output:/app/output
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+      - ./config.json:/app/config.json
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_API_BASE=${OPENAI_API_BASE}
+      - MODEL_NAME=${MODEL_NAME}
+      - TRANSLATE_MODEL=${TRANSLATE_MODEL}
+      - LOG_LEVEL=${LOG_LEVEL}
+    env_file:
+      - .env
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    command: npm run dev
