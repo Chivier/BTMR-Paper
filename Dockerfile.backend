@@ -12,13 +12,15 @@ RUN apt-get update && apt-get install -y \
     libpango1.0-dev \
     libgdk-pixbuf2.0-dev \
     libffi-dev \
+    curl \
     && rm -rf /var/lib/apt/lists/*
+
+# Install uv package manager using official installation script
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.local/bin:${PATH}"
 
 # Copy project files
 COPY . .
-
-# Install uv package manager
-RUN pip install uv
 
 # Install Python dependencies using uv
 RUN uv sync --frozen
