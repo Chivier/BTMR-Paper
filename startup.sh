@@ -172,6 +172,17 @@ main() {
         exit 1
     fi
     
+    # Install Playwright browsers
+    print_status "Installing Playwright browsers..."
+    uv run playwright install chromium >/dev/null 2>&1 || {
+        print_warning "Failed to install Playwright browsers, will try again..."
+        # Try with more verbose output to see what's wrong
+        uv run playwright install chromium || {
+            print_error "Failed to install Playwright browsers"
+            print_status "You may need to manually run: uv run playwright install chromium"
+        }
+    }
+    
     # Initialize database
     print_status "Initializing database..."
     uv run python -c "
