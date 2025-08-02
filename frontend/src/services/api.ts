@@ -15,9 +15,12 @@ import {
   AvailableModelsResponse,
 } from '@/types';
 
+// Get API base URL from environment or use default
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: '/api/v1',
+  baseURL: `${API_BASE_URL}/api/v1`,
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
@@ -163,8 +166,17 @@ export const createProgressWebSocket = (
   onError?: (error: Event) => void,
   onClose?: (event: CloseEvent) => void
 ): WebSocket => {
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const wsUrl = `${protocol}//${window.location.host}/api/v1/ws/progress/${paperId}`;
+  let wsUrl: string;
+  if (API_BASE_URL) {
+    // Use configured API base URL
+    const baseUrl = API_BASE_URL.replace(/^https?:/, '');
+    const protocol = API_BASE_URL.startsWith('https:') ? 'wss:' : 'ws:';
+    wsUrl = `${protocol}${baseUrl}/api/v1/ws/progress/${paperId}`;
+  } else {
+    // Use relative URL
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    wsUrl = `${protocol}//${window.location.host}/api/v1/ws/progress/${paperId}`;
+  }
   
   const ws = new WebSocket(wsUrl);
   
@@ -212,8 +224,17 @@ export const createGeneralWebSocket = (
   onError?: (error: Event) => void,
   onClose?: (event: CloseEvent) => void
 ): WebSocket => {
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const wsUrl = `${protocol}//${window.location.host}/api/v1/ws/general`;
+  let wsUrl: string;
+  if (API_BASE_URL) {
+    // Use configured API base URL
+    const baseUrl = API_BASE_URL.replace(/^https?:/, '');
+    const protocol = API_BASE_URL.startsWith('https:') ? 'wss:' : 'ws:';
+    wsUrl = `${protocol}${baseUrl}/api/v1/ws/general`;
+  } else {
+    // Use relative URL
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    wsUrl = `${protocol}//${window.location.host}/api/v1/ws/general`;
+  }
   
   const ws = new WebSocket(wsUrl);
   

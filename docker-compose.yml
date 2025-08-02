@@ -6,7 +6,7 @@ services:
       context: .
       dockerfile: Dockerfile.backend
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT}:8000"
     volumes:
       - ./output:/app/output
       - ./uploads:/app/uploads
@@ -20,12 +20,23 @@ services:
       - LOG_LEVEL=${LOG_LEVEL}
     env_file:
       - .env
+    networks:
+      - btmr-network
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - "${FRONTEND_PORT}:3000"
     environment:
       - NODE_ENV=production
+      - VITE_API_BASE_URL=http://backend:8000
+    depends_on:
+      - backend
+    networks:
+      - btmr-network
+
+networks:
+  btmr-network:
+    driver: bridge
