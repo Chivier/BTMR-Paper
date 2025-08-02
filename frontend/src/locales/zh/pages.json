@@ -1,0 +1,144 @@
+{
+  "home": {
+    "title": "欢迎使用 BTMR",
+    "subtitle": "美观文本挖掘阅读器 - 使用AI提取和总结学术论文",
+    "processPapers": {
+      "title": "处理论文",
+      "description": "上传或提供学术论文的网址，使用AI进行提取和摘要。",
+      "button": "开始使用"
+    },
+    "viewPapers": {
+      "title": "查看论文",
+      "description": "浏览和管理已处理的论文，支持搜索和筛选功能。",
+      "button": "浏览论文"
+    }
+  },
+  "processPaper": {
+    "title": "处理新论文",
+    "subtitle": "上传PDF文件或提供学术论文的网址，利用AI进行提取和总结。",
+    "inputSection": {
+      "title": "论文输入",
+      "description": "选择如何提供要处理的论文"
+    },
+    "urlInput": {
+      "label": "论文网址（ArXiv、DOI或直接链接）",
+      "placeholder": "https://arxiv.org/abs/2301.12345"
+    },
+    "fileInput": {
+      "label": "上传PDF文件",
+      "placeholder": "点击上传或将PDF文件拖拽到此处"
+    },
+    "uploadProgress": "正在上传文件...",
+    "processingProgress": "正在处理论文",
+    "processingCompleted": "处理完成！正在跳转到论文页面...",
+    "errors": {
+      "invalidUrl": "无效的网址格式。请提供有效的ArXiv网址或直接论文链接。"
+    }
+  },
+  "settings": {
+    "title": "设置",
+    "tabs": {
+      "api": "API设置",
+      "processing": "处理设置",
+      "image": "图像设置",
+      "system": "系统设置"
+    },
+    "status": {
+      "configurationStatus": "配置状态",
+      "valid": "有效",
+      "issuesFound": "发现问题",
+      "issues": "问题",
+      "warnings": "警告"
+    },
+    "api": {
+      "title": "API配置",
+      "openaiApiKey": {
+        "label": "OpenAI API密钥",
+        "placeholder": "sk-...",
+        "description": "您的OpenAI API密钥，用于访问GPT模型"
+      },
+      "apiBaseUrl": {
+        "label": "API基础网址",
+        "placeholder": "https://api.openai.com/v1",
+        "description": "自定义API端点（OpenAI请保持默认）"
+      },
+      "defaultModel": {
+        "label": "默认模型",
+        "description": "论文处理的默认模型",
+        "customDescription": "输入您的API提供商支持的自定义模型ID",
+        "useCustom": "使用自定义模型ID",
+        "placeholder": "输入自定义模型ID（例如：gpt-4、claude-3-sonnet等）",
+        "loadingModels": "正在加载模型...",
+        "failedToLoad": "加载模型失败",
+        "recommended": "（推荐）"
+      },
+      "translateModel": {
+        "label": "翻译模型",
+        "description": "用于翻译任务的模型",
+        "customDescription": "输入您的API提供商支持的自定义模型ID"
+      }
+    },
+    "processing": {
+      "title": "处理设置",
+      "maxPaperLength": {
+        "label": "最大论文长度（字符）",
+        "description": "发送给LLM的最大字符数（1,000 - 200,000）"
+      },
+      "requestTimeout": {
+        "label": "请求超时（秒）",
+        "description": "HTTP请求超时时间（5 - 300秒）"
+      },
+      "defaultOutputFormat": {
+        "label": "默认输出格式"
+      },
+      "defaultLanguage": {
+        "label": "默认语言"
+      }
+    },
+    "image": {
+      "title": "图像处理",
+      "maxImageSize": {
+        "label": "最大图像大小（MB）",
+        "description": "最大图像文件大小（0.1 - 100 MB）"
+      },
+      "imageQuality": {
+        "label": "图像质量（1-100）",
+        "description": "JPEG压缩质量（越高质量越好，文件越大）"
+      },
+      "maxImageDimension": {
+        "label": "最大图像尺寸（像素）",
+        "description": "图像的最大宽度/高度（100 - 5,000像素）"
+      }
+    },
+    "system": {
+      "title": "系统设置",
+      "logLevel": {
+        "label": "日志级别",
+        "description": "应用程序日志级别"
+      },
+      "colorScheme": {
+        "label": "颜色方案"
+      },
+      "configurationFiles": {
+        "title": "配置文件",
+        "envFile": "环境文件(.env)",
+        "configFile": "配置文件(config.json)",
+        "exists": "存在",
+        "notFound": "未找到"
+      }
+    },
+    "messages": {
+      "loadingConfiguration": "正在加载配置...",
+      "failedToLoad": "加载配置失败",
+      "configurationSaved": "配置保存成功",
+      "configurationReset": "配置已重置为默认值",
+      "modelsReloaded": "模型重新加载成功",
+      "noChangesToSave": "没有更改需要保存",
+      "confirmReset": "确定要将所有设置重置为默认值吗？此操作无法撤销。",
+      "savingConfiguration": "正在保存配置...",
+      "validatingConfiguration": "正在验证配置...",
+      "resetting": "正在重置...",
+      "reloading": "重新加载中..."
+    }
+  }
+}

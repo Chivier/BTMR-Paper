@@ -12,6 +12,7 @@ import {
   resetConfiguration,
   validateConfiguration,
   getAvailableModels,
+  testModel,
   handleApiError,
 } from '@/services/api';
 import { useNotification } from '@/context/NotificationContext';
@@ -24,6 +25,8 @@ export const SettingsPage: React.FC = () => {
   const [modelsLoadingState, setModelsLoadingState] = useState<LoadingState>('idle');
   const [saveState, setSaveState] = useState<LoadingState>('idle');
   const [reloadingModels, setReloadingModels] = useState<LoadingState>('idle');
+  const [testingModel, setTestingModel] = useState<LoadingState>('idle');
+  const [modelTestResult, setModelTestResult] = useState<any | null>(null);
   const [saveProgress, setSaveProgress] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -89,15 +92,11 @@ export const SettingsPage: React.FC = () => {
     }
   };
 
-  const loadAvailableModels = async (useFormData: boolean = true) => {
+  const loadAvailableModels = async () => {
     setModelsLoadingState('loading');
     
     try {
-      // Use form data for real-time preview, or saved config for post-save refresh
-      const apiKey = useFormData ? formData.openai_api_key : config?.openai_api_key;
-      const apiBase = useFormData ? formData.openai_api_base : config?.openai_api_base;
-      
-      const models = await getAvailableModels(apiKey, apiBase, showNotification);
+      const models = await getAvailableModels(showNotification);
       setAvailableModels(models);
       setModelsLoadingState('success');
     } catch (err) {
@@ -168,7 +167,7 @@ export const SettingsPage: React.FC = () => {
       }
       
       // Now reload models with the saved configuration
-      await loadAvailableModels(false);
+      await loadAvailableModels();
       
       setSuccessMessage('Models reloaded successfully');
       setReloadingModels('success');
@@ -292,6 +291,39 @@ export const SettingsPage: React.FC = () => {
     } catch (err) {
       setError(handleApiError(err));
       setSaveState('error');
+    }
+  };
+
+  const handleTestModel = async () => {
+    if (!formData.default_model) {
+      setError('Please select a model to test');
+      return;
+    }
+
+    setTestingModel('loading');
+    setError(null);
+    setSuccessMessage(null);
+    setModelTestResult(null);
+
+    try {
+      const result = await testModel(formData.default_model);
+      
+      setModelTestResult(result);
+      
+      if (result.available) {
+        setSuccessMessage(`Model ${formData.default_model} is available!`);
+        showNotification(`Model test successful: ${formData.default_model}`, 'success');
+      } else {
+        setError(`Model test failed: ${result.error}`);
+        showNotification(`Model test failed: ${result.error}`, 'error');
+      }
+      
+      setTestingModel('success');
+    } catch (err) {
+      const errorMessage = handleApiError(err);
+      setError(`Failed to test model: ${errorMessage}`);
+      showNotification(`Failed to test model: ${errorMessage}`, 'error');
+      setTestingModel('error');
     }
   };
 
@@ -515,6 +547,19 @@ export const SettingsPage: React.FC = () => {
                       )}
                       {reloadingModels === 'loading' ? 'Reloading...' : 'Reload Models'}
                     </button>
+                    <button
+                      onClick={handleTestModel}
+                      disabled={testingModel === 'loading' || !formData.default_model}
+                      className="btn btn-sm btn-primary flex items-center"
+                      title="Test if current model is available and show capabilities"
+                    >
+                      {testingModel === 'loading' ? (
+                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1"></div>
+                      ) : (
+                        <span className="mr-1">🧪</span>
+                      )}
+                      {testingModel === 'loading' ? 'Testing...' : 'Test Model'}
+                    </button>
                   </div>
                 </div>
                 
@@ -617,6 +662,77 @@ export const SettingsPage: React.FC = () => {
                   </p>
                 )}
               </div>
+
+              {/* Model Test Results */}
+              {modelTestResult && (
+                <div className={`border rounded-md p-4 ${
+                  modelTestResult.available 
+                    ? 'bg-green-50 border-green-200' 
+                    : 'bg-red-50 border-red-200'
+                }`}>
+                  <div className={`font-medium ${
+                    modelTestResult.available ? 'text-green-800' : 'text-red-800'
+                  }`}>
+                    Model Test Result: {modelTestResult.available ? 'Available' : 'Not Available'}
+                  </div>
+                  
+                  {modelTestResult.available && (
+                    <div className="mt-3 space-y-2">
+                      <div className="text-sm">
+                        <strong>Model ID:</strong> {modelTestResult.model_id}
+                      </div>
+                      
+                      {modelTestResult.capabilities && (
+                        <div className="text-sm">
+                          <strong>Capabilities:</strong>
+                          <div className="ml-4 mt-1 space-y-1">
+                            <div className="flex items-center">
+                              <span className={`w-3 h-3 rounded-full mr-2 ${
+                                modelTestResult.capabilities.supports_images ? 'bg-green-500' : 'bg-gray-300'
+                              }`}></span>
+                              <span>Image Support: {modelTestResult.capabilities.supports_images ? 'Yes' : 'No'}</span>
+                            </div>
+                            <div className="flex items-center">
+                              <span className={`w-3 h-3 rounded-full mr-2 ${
+                                modelTestResult.capabilities.supports_files ? 'bg-green-500' : 'bg-gray-300'
+                              }`}></span>
+                              <span>File Upload Support: {modelTestResult.capabilities.supports_files ? 'Yes' : 'No'}</span>
+                            </div>
+                            {modelTestResult.capabilities.context_length && (
+                              <div className="text-xs text-gray-600">
+                                Context Length: {modelTestResult.capabilities.context_length.toLocaleString()} tokens
+                              </div>
+                            )}
+                            {modelTestResult.capabilities.max_tokens && (
+                              <div className="text-xs text-gray-600">
+                                Max Output: {modelTestResult.capabilities.max_tokens.toLocaleString()} tokens
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {modelTestResult.response && (
+                        <div className="text-sm">
+                          <strong>Test Response:</strong> {modelTestResult.response}
+                        </div>
+                      )}
+                      
+                      {modelTestResult.usage && (
+                        <div className="text-xs text-gray-600">
+                          Token Usage: {modelTestResult.usage.total_tokens || 'N/A'} total
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  {!modelTestResult.available && modelTestResult.error && (
+                    <div className="mt-2 text-sm text-red-700">
+                      <strong>Error:</strong> {modelTestResult.error}
+                    </div>
+                  )}
+                </div>
+              )}
 
             </div>
           )}

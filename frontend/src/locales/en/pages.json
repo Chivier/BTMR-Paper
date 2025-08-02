@@ -1,0 +1,144 @@
+{
+  "home": {
+    "title": "Welcome to BTMR",
+    "subtitle": "Beautiful Text Mining Reader - Extract and summarize academic papers with AI",
+    "processPapers": {
+      "title": "Process Papers",
+      "description": "Upload or provide URLs to academic papers for AI-powered extraction and summarization.",
+      "button": "Get Started"
+    },
+    "viewPapers": {
+      "title": "View Papers",
+      "description": "Browse and manage your processed papers with search and filtering capabilities.",
+      "button": "Browse Papers"
+    }
+  },
+  "processPaper": {
+    "title": "Process New Paper",
+    "subtitle": "Upload a PDF file or provide a URL to an academic paper for AI-powered extraction and summarization.",
+    "inputSection": {
+      "title": "Paper Input",
+      "description": "Choose how you want to provide the paper for processing"
+    },
+    "urlInput": {
+      "label": "Paper URL (ArXiv, DOI, or direct link)",
+      "placeholder": "https://arxiv.org/abs/2301.12345"
+    },
+    "fileInput": {
+      "label": "Upload PDF File",
+      "placeholder": "Click to upload or drag and drop your PDF file here"
+    },
+    "uploadProgress": "Uploading file...",
+    "processingProgress": "Processing Paper",
+    "processingCompleted": "Processing completed! Redirecting to papers page...",
+    "errors": {
+      "invalidUrl": "Invalid URL format. Please provide a valid ArXiv URL or direct paper URL."
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "tabs": {
+      "api": "API Settings",
+      "processing": "Processing",
+      "image": "Image Settings",
+      "system": "System"
+    },
+    "status": {
+      "configurationStatus": "Configuration Status",
+      "valid": "Valid",
+      "issuesFound": "Issues Found",
+      "issues": "Issues",
+      "warnings": "Warnings"
+    },
+    "api": {
+      "title": "API Configuration",
+      "openaiApiKey": {
+        "label": "OpenAI API Key",
+        "placeholder": "sk-...",
+        "description": "Your OpenAI API key for accessing GPT models"
+      },
+      "apiBaseUrl": {
+        "label": "API Base URL",
+        "placeholder": "https://api.openai.com/v1",
+        "description": "Custom API endpoint (leave default for OpenAI)"
+      },
+      "defaultModel": {
+        "label": "Default Model",
+        "description": "Default model for paper processing",
+        "customDescription": "Enter a custom model ID that your API provider supports",
+        "useCustom": "Use custom model ID",
+        "placeholder": "Enter custom model ID (e.g., gpt-4, claude-3-sonnet, etc.)",
+        "loadingModels": "Loading models...",
+        "failedToLoad": "Failed to load models",
+        "recommended": "(Recommended)"
+      },
+      "translateModel": {
+        "label": "Translation Model",
+        "description": "Model used for translation tasks",
+        "customDescription": "Enter a custom model ID that your API provider supports"
+      }
+    },
+    "processing": {
+      "title": "Processing Settings",
+      "maxPaperLength": {
+        "label": "Max Paper Length (characters)",
+        "description": "Maximum characters to send to LLM (1,000 - 200,000)"
+      },
+      "requestTimeout": {
+        "label": "Request Timeout (seconds)",
+        "description": "HTTP request timeout (5 - 300 seconds)"
+      },
+      "defaultOutputFormat": {
+        "label": "Default Output Format"
+      },
+      "defaultLanguage": {
+        "label": "Default Language"
+      }
+    },
+    "image": {
+      "title": "Image Processing",
+      "maxImageSize": {
+        "label": "Max Image Size (MB)",
+        "description": "Maximum image file size (0.1 - 100 MB)"
+      },
+      "imageQuality": {
+        "label": "Image Quality (1-100)",
+        "description": "JPEG compression quality (higher = better quality, larger files)"
+      },
+      "maxImageDimension": {
+        "label": "Max Image Dimension (pixels)",
+        "description": "Maximum width/height for images (100 - 5,000 pixels)"
+      }
+    },
+    "system": {
+      "title": "System Settings",
+      "logLevel": {
+        "label": "Log Level",
+        "description": "Application logging level"
+      },
+      "colorScheme": {
+        "label": "Color Scheme"
+      },
+      "configurationFiles": {
+        "title": "Configuration Files",
+        "envFile": "Environment file (.env)",
+        "configFile": "Config file (config.json)",
+        "exists": "Exists",
+        "notFound": "Not found"
+      }
+    },
+    "messages": {
+      "loadingConfiguration": "Loading configuration...",
+      "failedToLoad": "Failed to load configuration",
+      "configurationSaved": "Configuration saved successfully",
+      "configurationReset": "Configuration reset to defaults",
+      "modelsReloaded": "Models reloaded successfully",
+      "noChangesToSave": "No changes to save",
+      "confirmReset": "Are you sure you want to reset all settings to defaults? This action cannot be undone.",
+      "savingConfiguration": "Saving configuration...",
+      "validatingConfiguration": "Validating configuration...",
+      "resetting": "Resetting...",
+      "reloading": "Reloading..."
+    }
+  }
+}

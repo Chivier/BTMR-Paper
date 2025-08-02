@@ -1,5 +1,6 @@
 import React, { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { 
   FileText, 
   Home, 
@@ -9,6 +10,7 @@ import {
   Plus
 } from 'lucide-react';
 import Banner from './Banner'; // Import the Banner component
+import { LanguageSwitcher } from './LanguageSwitcher';
 
 interface LayoutProps {
   children: ReactNode;
@@ -17,12 +19,13 @@ interface LayoutProps {
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  const { t } = useTranslation(['navigation']);
 
   const navigation = [
-    { name: 'Home', href: '/', icon: Home },
-    { name: 'Process Paper', href: '/process', icon: Plus },
-    { name: 'Papers', href: '/papers', icon: FileText },
-    { name: 'Settings', href: '/settings', icon: Settings },
+    { name: t('menu.home'), href: '/', icon: Home },
+    { name: t('menu.processPaper'), href: '/process', icon: Plus },
+    { name: t('menu.papers'), href: '/papers', icon: FileText },
+    { name: t('menu.settings'), href: '/settings', icon: Settings },
   ];
 
   const isActive = (href: string) => {
@@ -39,7 +42,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
         <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-white">
           <div className="flex h-16 items-center justify-between px-4">
-            <h1 className="text-xl font-bold gradient-text">BTMR</h1>
+            <h1 className="text-xl font-bold gradient-text">{t('header.appName')}</h1>
             <button
               onClick={() => setSidebarOpen(false)}
               className="btn-ghost btn-sm"
@@ -74,7 +77,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
         <div className="flex flex-col flex-grow bg-white border-r border-gray-200">
           <div className="flex h-16 items-center px-4">
-            <h1 className="text-xl font-bold gradient-text">BTMR</h1>
+            <h1 className="text-xl font-bold gradient-text">{t('header.appName')}</h1>
           </div>
           <nav className="flex-1 space-y-1 px-2 py-4">
             {navigation.map((item) => {
@@ -113,8 +116,11 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
             <div className="flex flex-1 items-center">
               <h2 className="text-lg font-semibold text-gray-900">
-                Beautiful Text Mining Reader
+                {t('header.fullName')}
               </h2>
+            </div>
+            <div className="flex items-center">
+              <LanguageSwitcher />
             </div>
           </div>
         </div>

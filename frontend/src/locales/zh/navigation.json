@@ -1,0 +1,12 @@
+{
+  "menu": {
+    "home": "首页",
+    "processPaper": "处理论文",
+    "papers": "论文库",
+    "settings": "设置"
+  },
+  "header": {
+    "appName": "BTMR",
+    "fullName": "美观文本挖掘阅读器"
+  }
+}

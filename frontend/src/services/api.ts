@@ -346,21 +346,10 @@ export const validateConfiguration = async (): Promise<ConfigurationValidation> 
 };
 
 export const getAvailableModels = async (
-  tempApiKey?: string,
-  tempApiBase?: string,
   showNotification?: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void
 ): Promise<AvailableModelsResponse> => {
   try {
-    const params = new URLSearchParams();
-    if (tempApiKey) {
-      params.append('api_key', tempApiKey);
-    }
-    if (tempApiBase) {
-      params.append('api_base', tempApiBase);
-    }
-    
-    const url = params.toString() ? `/config/models?${params}` : '/config/models';
-    const response: AxiosResponse<AvailableModelsResponse> = await api.get(url);
+    const response: AxiosResponse<AvailableModelsResponse> = await api.get('/config/models');
     return response.data;
   } catch (error) {
     const errorMessage = handleApiError(error);
@@ -368,6 +357,20 @@ export const getAvailableModels = async (
       showNotification(`Failed to load models: ${errorMessage}`, 'error');
     }
     throw error; // Re-throw the error so the calling component can handle it if needed
+  }
+};
+
+export const testModel = async (
+  modelId: string
+): Promise<any> => {
+  try {
+    const params = new URLSearchParams();
+    params.append('model_id', modelId);
+    
+    const response: AxiosResponse<any> = await api.post(`/config/test-model?${params}`);
+    return response.data;
+  } catch (error) {
+    throw error;
   }
 };
 
