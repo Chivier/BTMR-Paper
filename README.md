@@ -165,6 +165,86 @@ For development or custom configurations:
 
    The complete application will be available at: http://localhost:8000
 
+## 🐳 Docker Deployment
+
+BTMR can be easily deployed using Docker with separate containers for frontend and backend services.
+
+### Quick Start with Docker
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd BTMR-Paper
+   ```
+
+2. **Set up environment variables**
+   ```bash
+   cp .env.example .env
+   # Edit .env and add your OpenAI API key
+   ```
+
+3. **Build and run with Docker Compose**
+   ```bash
+   docker-compose up --build
+   ```
+
+   The services will be available at:
+   - Frontend: http://localhost:3000 (or the port specified as FRONTEND_PORT)
+   - Backend API: http://localhost:8000 (or the port specified as BACKEND_PORT)
+
+### Docker Architecture
+
+The Docker setup uses two separate services:
+- **Backend**: Python FastAPI server managed with uv, running on port 8000
+- **Frontend**: React application served by Vite preview server, running on port 3000
+
+Both services communicate through the Docker network, and the frontend connects to the backend API.
+
+### Environment Variables for Docker
+
+Key environment variables in `.env`:
+```env
+# API Configuration
+OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_API_BASE=https://api.openai.com/v1
+MODEL_NAME=gpt-4.1
+TRANSLATE_MODEL=gpt-4.1
+
+# Port Configuration
+FRONTEND_PORT=3000
+BACKEND_PORT=8000
+
+# Log Level
+LOG_LEVEL='DEBUG'
+```
+
+### Docker Commands
+
+```bash
+# Start services
+docker-compose up
+
+# Start services in background
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
+
+# Rebuild after code changes
+docker-compose up --build
+```
+
+### Volumes
+
+The Docker setup includes volumes for persistent data:
+- `./output`: Stores generated paper summaries
+- `./uploads`: Stores uploaded files
+- `./logs`: Application logs
+- `./config.json`: Additional configuration
+
 ## Usage
 
 ### Processing Papers

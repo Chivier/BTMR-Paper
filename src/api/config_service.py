@@ -9,7 +9,15 @@ from typing import Dict, Any, Optional
 from pathlib import Path
 from dotenv import load_dotenv, set_key, unset_key
 
-from src.config import Config
+try:
+    from src.config import Config
+except ImportError:
+    # In Docker or when running from different paths
+    import sys
+    from pathlib import Path
+    sys.path.append(str(Path(__file__).parent.parent.parent))
+    from src.config import Config
+    
 from .models import ConfigurationRequest, ConfigurationResponse
 
 

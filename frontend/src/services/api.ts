@@ -16,11 +16,12 @@ import {
 } from '@/types';
 
 // Get API base URL from environment or use default
+// In production, if VITE_API_BASE_URL is not set, use relative paths
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: `${API_BASE_URL}/api/v1`,
+  baseURL: API_BASE_URL ? `${API_BASE_URL}/api/v1` : '/api/v1',
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
