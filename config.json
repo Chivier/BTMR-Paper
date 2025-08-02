@@ -1,0 +1,16 @@
+{
+  "MAX_PAPER_LENGTH": 50000,
+  "MAX_IMAGE_SIZE_MB": 10.0,
+  "REQUEST_TIMEOUT": 30,
+  "DEFAULT_OUTPUT_FORMAT": "html",
+  "DEFAULT_LANGUAGE": "en",
+  "IMAGE_QUALITY": 85,
+  "MAX_IMAGE_DIMENSION": 2000,
+  "COLORS": {
+    "abstract": "#7d7dff",
+    "background": "#ff9f43",
+    "contribution": "#1dd1a1",
+    "method": "#ff6b6b",
+    "results": "#feca57"
+  }
+}

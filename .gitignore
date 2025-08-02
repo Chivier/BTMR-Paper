@@ -13,7 +13,7 @@ __pycache__/
 output/
 *.pdf
 *.html
-*.json
+
 
 # Temporary files
 *.tmp
