@@ -164,6 +164,7 @@ def main():
         paper_id = os.path.basename(paper_folder)
         
         # Log the paper processing
+        pdf_path = args.output if args.format == 'pdf' else None
         metadata_logger.log_paper(
             paper_id=paper_id,
             title=extracted_data.get('title', 'Unknown'),
@@ -172,6 +173,7 @@ def main():
             format_used=format_used if args.input_type == 'arxiv' else args.input_type,
             output_format=args.format,
             output_path=args.output,
+            pdf_path=pdf_path,
             extracted_data=extracted_data,
             processing_time=(datetime.now() - start_time).total_seconds(),
             language=args.lang
