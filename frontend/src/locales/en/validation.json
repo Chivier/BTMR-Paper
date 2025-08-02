@@ -1,0 +1,10 @@
+{
+  "required": "This field is required",
+  "invalid": "Invalid value",
+  "tooShort": "Value is too short",
+  "tooLong": "Value is too long",
+  "invalidEmail": "Invalid email address",
+  "invalidUrl": "Invalid URL format",
+  "invalidNumber": "Invalid number",
+  "outOfRange": "Value is out of range"
+}

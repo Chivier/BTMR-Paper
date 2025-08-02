@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Upload, Link, Loader2, AlertCircle } from 'lucide-react';
 import { 
   processPaper, 
@@ -17,6 +18,7 @@ import {
 
 export const ProcessPaperPage: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation(['pages']);
   const [inputType, setInputType] = useState<'url' | 'file'>('url');
   const [inputValue, setInputValue] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -135,17 +137,17 @@ export const ProcessPaperPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Process New Paper</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('processPaper.title')}</h1>
         <p className="text-gray-600 mt-2">
-          Upload a PDF file or provide a URL to an academic paper for AI-powered extraction and summarization.
+          {t('processPaper.subtitle')}
         </p>
       </div>
 
       <div className="card">
         <div className="card-header">
-          <h3 className="card-title">Paper Input</h3>
+          <h3 className="card-title">{t('processPaper.inputSection.title')}</h3>
           <p className="card-description">
-            Choose how you want to provide the paper for processing
+            {t('processPaper.inputSection.description')}
           </p>
         </div>
         <div className="card-content space-y-4">
@@ -163,7 +165,7 @@ export const ProcessPaperPage: React.FC = () => {
               onClick={() => setInputType('file')}
             >
               <Upload className="w-4 h-4 mr-2" />
-              File Upload
+              {t('common.labels.file')}
             </button>
           </div>
 
@@ -171,12 +173,12 @@ export const ProcessPaperPage: React.FC = () => {
           {inputType === 'url' ? (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Paper URL (ArXiv, DOI, or direct link)
+                {t('processPaper.urlInput.label')}
               </label>
               <input
                 type="url"
                 className="input"
-                placeholder="https://arxiv.org/abs/2301.12345"
+                placeholder={t('processPaper.urlInput.placeholder')}
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
               />
@@ -184,7 +186,7 @@ export const ProcessPaperPage: React.FC = () => {
           ) : (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Upload PDF File
+                {t('processPaper.fileInput.label')}
               </label>
               <div className="relative">
                 <input
@@ -196,7 +198,7 @@ export const ProcessPaperPage: React.FC = () => {
                 <div className="dropzone">
                   <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
                   <p className="text-sm text-gray-600">
-                    {selectedFile ? selectedFile.name : "Click to upload or drag and drop your PDF file here"}
+                    {selectedFile ? selectedFile.name : t('processPaper.fileInput.placeholder')}
                   </p>
                 </div>
               </div>
@@ -213,17 +215,17 @@ export const ProcessPaperPage: React.FC = () => {
               {isProcessing ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Processing...
+                  {t('common.processing')}
                 </>
               ) : (
-                'Process Paper'
+                t('common.buttons.processPaper')
               )}
             </button>
             <button
               className="btn-outline btn-md"
               onClick={() => navigate('/papers')}
             >
-              View Papers
+              {t('common.buttons.viewPapers')}
             </button>
           </div>
         </div>
@@ -247,7 +249,7 @@ export const ProcessPaperPage: React.FC = () => {
           <div className="card-content py-2">
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span>Uploading file...</span>
+                <span>{t('processPaper.uploadProgress')}</span>
                 <span>{uploadProgress}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
@@ -267,7 +269,7 @@ export const ProcessPaperPage: React.FC = () => {
           <div className="card-content py-2">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="font-medium text-gray-900">Processing Paper</h3>
+                <h3 className="font-medium text-gray-900">{t('processPaper.processingProgress')}</h3>
                 <span className={getStatusBadgeClass(processingProgress.status)}>
                   {processingProgress.status}
                 </span>
@@ -286,7 +288,7 @@ export const ProcessPaperPage: React.FC = () => {
               </div>
               {processingProgress.status === 'completed' && (
                 <p className="text-sm text-green-600 mt-2">
-                  Processing completed! Redirecting to papers page...
+                  {t('processPaper.processingCompleted')}
                 </p>
               )}
             </div>

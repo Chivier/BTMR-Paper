@@ -1,0 +1,12 @@
+{
+  "menu": {
+    "home": "Home",
+    "processPaper": "Process Paper",
+    "papers": "Papers",
+    "settings": "Settings"
+  },
+  "header": {
+    "appName": "BTMR",
+    "fullName": "Beautiful Text Mining Reader"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "required": "此字段为必填项",
+  "invalid": "无效值",
+  "tooShort": "值太短",
+  "tooLong": "值太长",
+  "invalidEmail": "无效的电子邮件地址",
+  "invalidUrl": "无效的网址格式",
+  "invalidNumber": "无效数字",
+  "outOfRange": "值超出范围"
+}
