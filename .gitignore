@@ -11,8 +11,6 @@ __pycache__/
 
 # Output files
 output/
-*.pdf
-*.html
 
 
 # Temporary files
