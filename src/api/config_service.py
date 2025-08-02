@@ -329,6 +329,13 @@ class ConfigurationService:
                 # Determine model capabilities based on model ID
                 capabilities = self._determine_model_capabilities(model_id)
                 
+                # Debug logging
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.info(f"Testing model: {model_id}")
+                logger.info(f"Model ID lower: {model_id.lower()}")
+                logger.info(f"Determined capabilities: {capabilities}")
+                
                 return {
                     "available": True,
                     "model_id": model_id,
@@ -389,23 +396,23 @@ class ConfigurationService:
         """Determine model capabilities based on model ID patterns."""
         model_id_lower = model_id.lower()
         
-        # GPT-4 Vision models
-        if any(x in model_id_lower for x in ['gpt-4-vision', 'gpt-4-turbo', 'gpt-4o']):
+        # GPT-4 Vision models (including gpt-4.1)
+        if any(x in model_id_lower for x in ['gpt-4-vision', 'gpt-4-turbo', 'gpt-4o']) or model_id_lower.startswith('gpt-4.1'):
             return {
                 "supports_images": True,
                 "supports_files": True,
                 "max_tokens": 4096 if 'gpt-4o-mini' in model_id_lower else 4096,
-                "context_length": 128000,
+                "context_length": 32768 if model_id_lower.startswith('gpt-4.1') else 128000,
                 "vision_capable": True
             }
         
-        # GPT-4 standard models
-        elif model_id_lower.startswith('gpt-4'):
+        # GPT-4 standard models (without vision)
+        elif model_id_lower.startswith('gpt-4') and model_id_lower == 'gpt-4':
             return {
                 "supports_images": False,
                 "supports_files": True,
                 "max_tokens": 4096,
-                "context_length": 8192 if model_id_lower == 'gpt-4' else 32768,
+                "context_length": 8192,
                 "vision_capable": False
             }
         

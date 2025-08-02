@@ -18,7 +18,7 @@ import {
 
 export const ProcessPaperPage: React.FC = () => {
   const navigate = useNavigate();
-  const { t } = useTranslation(['pages']);
+  const { t } = useTranslation(['pages', 'common']);
   const [inputType, setInputType] = useState<'url' | 'file'>('url');
   const [inputValue, setInputValue] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -137,17 +137,17 @@ export const ProcessPaperPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">{t('processPaper.title')}</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('pages:processPaper.title')}</h1>
         <p className="text-gray-600 mt-2">
-          {t('processPaper.subtitle')}
+          {t('pages:processPaper.subtitle')}
         </p>
       </div>
 
       <div className="card">
         <div className="card-header">
-          <h3 className="card-title">{t('processPaper.inputSection.title')}</h3>
+          <h3 className="card-title">{t('pages:processPaper.inputSection.title')}</h3>
           <p className="card-description">
-            {t('processPaper.inputSection.description')}
+            {t('pages:processPaper.inputSection.description')}
           </p>
         </div>
         <div className="card-content space-y-4">
@@ -165,7 +165,7 @@ export const ProcessPaperPage: React.FC = () => {
               onClick={() => setInputType('file')}
             >
               <Upload className="w-4 h-4 mr-2" />
-              {t('common.labels.file')}
+              {t('common:buttons.upload')}
             </button>
           </div>
 
@@ -173,12 +173,12 @@ export const ProcessPaperPage: React.FC = () => {
           {inputType === 'url' ? (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('processPaper.urlInput.label')}
+                {t('pages:processPaper.urlInput.label')}
               </label>
               <input
                 type="url"
                 className="input"
-                placeholder={t('processPaper.urlInput.placeholder')}
+                placeholder={t('pages:processPaper.urlInput.placeholder')}
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
               />
@@ -186,7 +186,7 @@ export const ProcessPaperPage: React.FC = () => {
           ) : (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('processPaper.fileInput.label')}
+                {t('pages:processPaper.fileInput.label')}
               </label>
               <div className="relative">
                 <input
@@ -198,7 +198,7 @@ export const ProcessPaperPage: React.FC = () => {
                 <div className="dropzone">
                   <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
                   <p className="text-sm text-gray-600">
-                    {selectedFile ? selectedFile.name : t('processPaper.fileInput.placeholder')}
+                    {selectedFile ? selectedFile.name : t('pages:processPaper.fileInput.placeholder')}
                   </p>
                 </div>
               </div>
@@ -215,17 +215,17 @@ export const ProcessPaperPage: React.FC = () => {
               {isProcessing ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  {t('common.processing')}
+                  {t('common:buttons.processing')}
                 </>
               ) : (
-                t('common.buttons.processPaper')
+                t('common:buttons.processPaper')
               )}
             </button>
             <button
               className="btn-outline btn-md"
               onClick={() => navigate('/papers')}
             >
-              {t('common.buttons.viewPapers')}
+              {t('common:buttons.viewPapers')}
             </button>
           </div>
         </div>
@@ -249,7 +249,7 @@ export const ProcessPaperPage: React.FC = () => {
           <div className="card-content py-2">
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span>{t('processPaper.uploadProgress')}</span>
+                <span>{t('pages:processPaper.uploadProgress')}</span>
                 <span>{uploadProgress}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
@@ -269,7 +269,7 @@ export const ProcessPaperPage: React.FC = () => {
           <div className="card-content py-2">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="font-medium text-gray-900">{t('processPaper.processingProgress')}</h3>
+                <h3 className="font-medium text-gray-900">{t('pages:processPaper.processingProgress')}</h3>
                 <span className={getStatusBadgeClass(processingProgress.status)}>
                   {processingProgress.status}
                 </span>
@@ -288,7 +288,7 @@ export const ProcessPaperPage: React.FC = () => {
               </div>
               {processingProgress.status === 'completed' && (
                 <p className="text-sm text-green-600 mt-2">
-                  {t('processPaper.processingCompleted')}
+                  {t('pages:processPaper.processingCompleted')}
                 </p>
               )}
             </div>

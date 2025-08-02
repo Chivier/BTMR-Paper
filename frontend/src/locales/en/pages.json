@@ -76,7 +76,16 @@
         "label": "Translation Model",
         "description": "Model used for translation tasks",
         "customDescription": "Enter a custom model ID that your API provider supports"
-      }
+      },
+      "modelTestResult": "Model Test Result",
+      "modelId": "Model ID",
+      "capabilities": "Capabilities",
+      "imageSupport": "Image Support",
+      "fileUploadSupport": "File Upload Support",
+      "contextLength": "Context Length",
+      "maxOutput": "Max Output",
+      "testResponse": "Test Response",
+      "tokenUsage": "Token Usage"
     },
     "processing": {
       "title": "Processing Settings",
@@ -138,7 +147,16 @@
       "savingConfiguration": "Saving configuration...",
       "validatingConfiguration": "Validating configuration...",
       "resetting": "Resetting...",
-      "reloading": "Reloading..."
+      "reloading": "Reloading...",
+      "reloadModelsTooltip": "Save configuration and reload models",
+      "testModelTooltip": "Test if current model is available and show capabilities",
+      "pleaseSelectModel": "Please select a model to test",
+      "modelAvailable": "Model {{model}} is available!",
+      "modelTestSuccessful": "Model test successful: {{model}}",
+      "modelTestFailed": "Model test failed: {{error}}",
+      "failedToTestModel": "Failed to test model: {{error}}",
+      "failedToLoadModelsNote": "Failed to load models. Please check your API configuration.",
+      "networkError": "Network error"
     }
   }
 }

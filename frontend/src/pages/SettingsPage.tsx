@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ConfigurationResponse,
   ConfigurationRequest,
@@ -18,6 +19,7 @@ import {
 import { useNotification } from '@/context/NotificationContext';
 
 export const SettingsPage: React.FC = () => {
+  const { t } = useTranslation(['pages', 'common']);
   const [config, setConfig] = useState<ConfigurationResponse | null>(null);
   const [validation, setValidation] = useState<ConfigurationValidation | null>(null);
   const [availableModels, setAvailableModels] = useState<AvailableModelsResponse | null>(null);
@@ -103,8 +105,8 @@ export const SettingsPage: React.FC = () => {
       // Set fallback models in case of complete failure
       setAvailableModels({
         models: [],
-        custom_note: 'Failed to load models. Please check your API configuration.',
-        error: 'Network error'
+        custom_note: t('pages:settings.messages.failedToLoadModelsNote'),
+        error: t('pages:settings.messages.networkError')
       });
       setModelsLoadingState('error');
     }
@@ -169,7 +171,7 @@ export const SettingsPage: React.FC = () => {
       // Now reload models with the saved configuration
       await loadAvailableModels();
       
-      setSuccessMessage('Models reloaded successfully');
+      setSuccessMessage(t('pages:settings.messages.modelsReloaded'));
       setReloadingModels('success');
       
     } catch (err) {
@@ -180,7 +182,7 @@ export const SettingsPage: React.FC = () => {
 
   const handleSave = async () => {
     setSaveState('loading');
-    setSaveProgress('Saving configuration...');
+    setSaveProgress(t('pages:settings.messages.savingConfiguration'));
     setError(null);
     setSuccessMessage(null);
 
@@ -226,7 +228,7 @@ export const SettingsPage: React.FC = () => {
       }
 
       if (Object.keys(updates).length === 0) {
-        setSuccessMessage('No changes to save');
+        setSuccessMessage(t('pages:settings.messages.noChangesToSave'));
         setSaveState('success');
         setSaveProgress('');
         return;
@@ -236,11 +238,11 @@ export const SettingsPage: React.FC = () => {
       setConfig(updatedConfig);
       
       // Refresh validation
-      setSaveProgress('Validating configuration...');
+      setSaveProgress(t('pages:settings.messages.validatingConfiguration'));
       const newValidation = await validateConfiguration();
       setValidation(newValidation);
       
-      setSuccessMessage('Configuration saved successfully');
+      setSuccessMessage(t('pages:settings.messages.configurationSaved'));
       setSaveState('success');
       setSaveProgress('');
       
@@ -252,7 +254,7 @@ export const SettingsPage: React.FC = () => {
   };
 
   const handleReset = async () => {
-    if (!confirm('Are you sure you want to reset all settings to defaults? This action cannot be undone.')) {
+    if (!confirm(t('pages:settings.messages.confirmReset'))) {
       return;
     }
 
@@ -281,7 +283,7 @@ export const SettingsPage: React.FC = () => {
       // Reset toggle states - they will be updated by the useEffect
       setUseCustomDefaultModel(false);
       setUseCustomTranslateModel(false);
-      setSuccessMessage('Configuration reset to defaults');
+      setSuccessMessage(t('pages:settings.messages.configurationReset'));
       setSaveState('success');
       
       // Refresh validation
@@ -296,7 +298,7 @@ export const SettingsPage: React.FC = () => {
 
   const handleTestModel = async () => {
     if (!formData.default_model) {
-      setError('Please select a model to test');
+      setError(t('pages:settings.messages.pleaseSelectModel'));
       return;
     }
 
@@ -311,18 +313,18 @@ export const SettingsPage: React.FC = () => {
       setModelTestResult(result);
       
       if (result.available) {
-        setSuccessMessage(`Model ${formData.default_model} is available!`);
-        showNotification(`Model test successful: ${formData.default_model}`, 'success');
+        setSuccessMessage(t('pages:settings.messages.modelAvailable', { model: formData.default_model }));
+        showNotification(t('pages:settings.messages.modelTestSuccessful', { model: formData.default_model }), 'success');
       } else {
-        setError(`Model test failed: ${result.error}`);
-        showNotification(`Model test failed: ${result.error}`, 'error');
+        setError(t('pages:settings.messages.modelTestFailed', { error: result.error }));
+        showNotification(t('pages:settings.messages.modelTestFailed', { error: result.error }), 'error');
       }
       
       setTestingModel('success');
     } catch (err) {
       const errorMessage = handleApiError(err);
-      setError(`Failed to test model: ${errorMessage}`);
-      showNotification(`Failed to test model: ${errorMessage}`, 'error');
+      setError(t('pages:settings.messages.failedToTestModel', { error: errorMessage }));
+      showNotification(t('pages:settings.messages.failedToTestModel', { error: errorMessage }), 'error');
       setTestingModel('error');
     }
   };
@@ -335,12 +337,12 @@ export const SettingsPage: React.FC = () => {
   if (loadingState === 'loading') {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('pages:settings.title')}</h1>
         <div className="card">
           <div className="card-content py-2">
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              <span className="ml-2 text-gray-600">Loading configuration...</span>
+              <span className="ml-2 text-gray-600">{t('pages:settings.messages.loadingConfiguration')}</span>
             </div>
           </div>
         </div>
@@ -351,17 +353,17 @@ export const SettingsPage: React.FC = () => {
   if (loadingState === 'error') {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('pages:settings.title')}</h1>
         <div className="card">
           <div className="card-content py-2">
             <div className="text-center py-8">
-              <div className="text-red-600 mb-4">Failed to load configuration</div>
+              <div className="text-red-600 mb-4">{t('pages:settings.messages.failedToLoad')}</div>
               <p className="text-gray-600 mb-4">{error}</p>
               <button
                 onClick={loadConfiguration}
                 className="btn btn-primary"
               >
-                Retry
+                {t('common:buttons.retry')}
               </button>
             </div>
           </div>
@@ -373,7 +375,7 @@ export const SettingsPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('pages:settings.title')}</h1>
         <div className="flex space-x-3">
             <button
             onClick={handleReset}
@@ -383,10 +385,10 @@ export const SettingsPage: React.FC = () => {
             {saveState === 'loading' ? (
               <div className="flex items-center">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 mr-2"></div>
-                Resetting...
+                {t('pages:settings.messages.resetting')}
               </div>
             ) : (
-              'Reset to Defaults'
+              t('common:buttons.resetToDefaults')
             )}
           </button>
           <button
@@ -397,10 +399,10 @@ export const SettingsPage: React.FC = () => {
             {saveState === 'loading' ? (
               <div className="flex items-center">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                {saveProgress || 'Saving...'}
+                {saveProgress || t('common:buttons.saving')}
               </div>
             ) : (
-              'Save Changes'
+              t('common:buttons.saveChanges')
             )}
           </button>
         </div>
@@ -429,12 +431,12 @@ export const SettingsPage: React.FC = () => {
           <div className={`font-medium ${
             validation.valid ? 'text-green-800' : 'text-yellow-800'
           }`}>
-            Configuration Status: {validation.valid ? 'Valid' : 'Issues Found'}
+            {t('pages:settings.status.configurationStatus')}: {validation.valid ? t('pages:settings.status.valid') : t('pages:settings.status.issuesFound')}
           </div>
           
           {validation.issues.length > 0 && (
             <div className="mt-2">
-              <div className="text-red-800 font-medium">Issues:</div>
+              <div className="text-red-800 font-medium">{t('pages:settings.status.issues')}:</div>
               <ul className="list-disc list-inside text-red-700">
                 {validation.issues.map((issue, index) => (
                   <li key={index}>{issue}</li>
@@ -445,7 +447,7 @@ export const SettingsPage: React.FC = () => {
           
           {validation.warnings.length > 0 && (
             <div className="mt-2">
-              <div className="text-yellow-800 font-medium">Warnings:</div>
+              <div className="text-yellow-800 font-medium">{t('pages:settings.status.warnings')}:</div>
               <ul className="list-disc list-inside text-yellow-700">
                 {validation.warnings.map((warning, index) => (
                   <li key={index}>{warning}</li>
@@ -460,10 +462,10 @@ export const SettingsPage: React.FC = () => {
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-8">
           {[
-            { id: 'api' as const, label: 'API Settings' },
-            { id: 'processing' as const, label: 'Processing' },
-            { id: 'image' as const, label: 'Image Settings' },
-            { id: 'system' as const, label: 'System' },
+            { id: 'api' as const, label: t('pages:settings.tabs.api') },
+            { id: 'processing' as const, label: t('pages:settings.tabs.processing') },
+            { id: 'image' as const, label: t('pages:settings.tabs.image') },
+            { id: 'system' as const, label: t('pages:settings.tabs.system') },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -485,44 +487,44 @@ export const SettingsPage: React.FC = () => {
         <div className="card-content py-2">
           {activeTab === 'api' && (
             <div className="space-y-6">
-              <h3 className="text-lg font-medium text-gray-900">API Configuration</h3>
+              <h3 className="text-lg font-medium text-gray-900">{t('pages:settings.api.title')}</h3>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  OpenAI API Key
+                  {t('pages:settings.api.openaiApiKey.label')}
                 </label>
                 <input
                   type="password"
                   value={formData.openai_api_key || ''}
                   onChange={(e) => updateFormField('openai_api_key', e.target.value)}
                   className="input w-full"
-                  placeholder="sk-..."
+                  placeholder={t('pages:settings.api.openaiApiKey.placeholder')}
                 />
                 <p className="text-sm text-gray-500 mt-1">
-                  Your OpenAI API key for accessing GPT models
+                  {t('pages:settings.api.openaiApiKey.description')}
                 </p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  API Base URL
+                  {t('pages:settings.api.apiBaseUrl.label')}
                 </label>
                 <input
                   type="url"
                   value={formData.openai_api_base || ''}
                   onChange={(e) => updateFormField('openai_api_base', e.target.value)}
                   className="input w-full"
-                  placeholder="https://api.openai.com/v1"
+                  placeholder={t('pages:settings.api.apiBaseUrl.placeholder')}
                 />
                 <p className="text-sm text-gray-500 mt-1">
-                  Custom API endpoint (leave default for OpenAI)
+                  {t('pages:settings.api.apiBaseUrl.description')}
                 </p>
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="block text-sm font-medium text-gray-700">
-                    Default Model
+                    {t('pages:settings.api.defaultModel.label')}
                   </label>
                   <div className="flex items-center space-x-3">
                     <label className="flex items-center">
@@ -532,33 +534,33 @@ export const SettingsPage: React.FC = () => {
                         onChange={(e) => setUseCustomDefaultModel(e.target.checked)}
                         className="mr-2"
                       />
-                      <span className="text-sm text-gray-600">Use custom model ID</span>
+                      <span className="text-sm text-gray-600">{t('pages:settings.api.defaultModel.useCustom')}</span>
                     </label>
                     <button
                       onClick={handleReloadModels}
                       disabled={reloadingModels === 'loading' || modelsLoadingState === 'loading'}
                       className="btn btn-sm btn-secondary flex items-center"
-                      title="Save configuration and reload models"
+                      title={t('pages:settings.messages.reloadModelsTooltip')}
                     >
                       {(reloadingModels === 'loading' || modelsLoadingState === 'loading') ? (
                         <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-600 mr-1"></div>
                       ) : (
                         <span className="mr-1">🔄</span>
                       )}
-                      {reloadingModels === 'loading' ? 'Reloading...' : 'Reload Models'}
+                      {reloadingModels === 'loading' ? t('pages:settings.messages.reloading') : t('common:buttons.reloadModels')}
                     </button>
                     <button
                       onClick={handleTestModel}
                       disabled={testingModel === 'loading' || !formData.default_model}
                       className="btn btn-sm btn-primary flex items-center"
-                      title="Test if current model is available and show capabilities"
+                      title={t('pages:settings.messages.testModelTooltip')}
                     >
                       {testingModel === 'loading' ? (
                         <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1"></div>
                       ) : (
                         <span className="mr-1">🧪</span>
                       )}
-                      {testingModel === 'loading' ? 'Testing...' : 'Test Model'}
+                      {testingModel === 'loading' ? t('common:status.testing') : t('common:buttons.testModel')}
                     </button>
                   </div>
                 </div>
@@ -569,7 +571,7 @@ export const SettingsPage: React.FC = () => {
                     value={formData.default_model || ''}
                     onChange={(e) => updateFormField('default_model', e.target.value)}
                     className="input w-full"
-                    placeholder="Enter custom model ID (e.g., gpt-4, claude-3-sonnet, etc.)"
+                    placeholder={t('pages:settings.api.defaultModel.placeholder')}
                   />
                 ) : (
                   <select
@@ -579,13 +581,13 @@ export const SettingsPage: React.FC = () => {
                     className={`input w-full ${modelsLoadingState === 'loading' ? 'bg-gray-100' : ''}`}
                   >
                     {modelsLoadingState === 'loading' ? (
-                      <option value="">Loading models...</option>
+                      <option value="">{t('pages:settings.api.defaultModel.loadingModels')}</option>
                     ) : availableModels?.error ? (
-                      <option value="">Failed to load models</option>
+                      <option value="">{t('pages:settings.api.defaultModel.failedToLoad')}</option>
                     ) : (
                       availableModels?.models.map((model) => (
                         <option key={model.id} value={model.id}>
-                          {model.id} {model.recommended ? '(Recommended)' : ''}
+                          {model.id} {model.recommended ? t('pages:settings.api.defaultModel.recommended') : ''}
                         </option>
                       ))
                     )}
@@ -594,8 +596,8 @@ export const SettingsPage: React.FC = () => {
                 
                 <p className="text-sm text-gray-500 mt-1">
                   {useCustomDefaultModel 
-                    ? 'Enter a custom model ID that your API provider supports'
-                    : 'Default model for paper processing'
+                    ? t('pages:settings.api.defaultModel.customDescription')
+                    : t('pages:settings.api.defaultModel.description')
                   }
                 </p>
                 {availableModels?.error && !useCustomDefaultModel && (
@@ -608,7 +610,7 @@ export const SettingsPage: React.FC = () => {
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="block text-sm font-medium text-gray-700">
-                    Translation Model
+                    {t('pages:settings.api.translateModel.label')}
                   </label>
                   <label className="flex items-center">
                     <input
@@ -617,7 +619,7 @@ export const SettingsPage: React.FC = () => {
                       onChange={(e) => setUseCustomTranslateModel(e.target.checked)}
                       className="mr-2"
                     />
-                    <span className="text-sm text-gray-600">Use custom model ID</span>
+                    <span className="text-sm text-gray-600">{t('pages:settings.api.defaultModel.useCustom')}</span>
                   </label>
                 </div>
                 
@@ -627,7 +629,7 @@ export const SettingsPage: React.FC = () => {
                     value={formData.translate_model || ''}
                     onChange={(e) => updateFormField('translate_model', e.target.value)}
                     className="input w-full"
-                    placeholder="Enter custom model ID (e.g., gpt-4, claude-3-sonnet, etc.)"
+                    placeholder={t('pages:settings.api.defaultModel.placeholder')}
                   />
                 ) : (
                   <select
@@ -637,13 +639,13 @@ export const SettingsPage: React.FC = () => {
                     className={`input w-full ${modelsLoadingState === 'loading' ? 'bg-gray-100' : ''}`}
                   >
                     {modelsLoadingState === 'loading' ? (
-                      <option value="">Loading models...</option>
+                      <option value="">{t('pages:settings.api.defaultModel.loadingModels')}</option>
                     ) : availableModels?.error ? (
-                      <option value="">Failed to load models</option>
+                      <option value="">{t('pages:settings.api.defaultModel.failedToLoad')}</option>
                     ) : (
                       availableModels?.models.map((model) => (
                         <option key={model.id} value={model.id}>
-                          {model.id} {model.recommended ? '(Recommended)' : ''}
+                          {model.id} {model.recommended ? t('pages:settings.api.defaultModel.recommended') : ''}
                         </option>
                       ))
                     )}
@@ -652,8 +654,8 @@ export const SettingsPage: React.FC = () => {
                 
                 <p className="text-sm text-gray-500 mt-1">
                   {useCustomTranslateModel 
-                    ? 'Enter a custom model ID that your API provider supports'
-                    : 'Model used for translation tasks'
+                    ? t('pages:settings.api.defaultModel.customDescription')
+                    : t('pages:settings.api.translateModel.description')
                   }
                 </p>
                 {availableModels?.error && !useCustomTranslateModel && (
@@ -673,39 +675,39 @@ export const SettingsPage: React.FC = () => {
                   <div className={`font-medium ${
                     modelTestResult.available ? 'text-green-800' : 'text-red-800'
                   }`}>
-                    Model Test Result: {modelTestResult.available ? 'Available' : 'Not Available'}
+                    {t('pages:settings.api.modelTestResult')}: {modelTestResult.available ? t('common:status.available') : t('common:status.notAvailable')}
                   </div>
                   
                   {modelTestResult.available && (
                     <div className="mt-3 space-y-2">
                       <div className="text-sm">
-                        <strong>Model ID:</strong> {modelTestResult.model_id}
+                        <strong>{t('pages:settings.api.modelId')}:</strong> {modelTestResult.model_id}
                       </div>
                       
                       {modelTestResult.capabilities && (
                         <div className="text-sm">
-                          <strong>Capabilities:</strong>
+                          <strong>{t('pages:settings.api.capabilities')}:</strong>
                           <div className="ml-4 mt-1 space-y-1">
                             <div className="flex items-center">
                               <span className={`w-3 h-3 rounded-full mr-2 ${
                                 modelTestResult.capabilities.supports_images ? 'bg-green-500' : 'bg-gray-300'
                               }`}></span>
-                              <span>Image Support: {modelTestResult.capabilities.supports_images ? 'Yes' : 'No'}</span>
+                              <span>{t('pages:settings.api.imageSupport')}: {modelTestResult.capabilities.supports_images ? t('common:labels.yes') : t('common:labels.no')}</span>
                             </div>
                             <div className="flex items-center">
                               <span className={`w-3 h-3 rounded-full mr-2 ${
                                 modelTestResult.capabilities.supports_files ? 'bg-green-500' : 'bg-gray-300'
                               }`}></span>
-                              <span>File Upload Support: {modelTestResult.capabilities.supports_files ? 'Yes' : 'No'}</span>
+                              <span>{t('pages:settings.api.fileUploadSupport')}: {modelTestResult.capabilities.supports_files ? t('common:labels.yes') : t('common:labels.no')}</span>
                             </div>
                             {modelTestResult.capabilities.context_length && (
                               <div className="text-xs text-gray-600">
-                                Context Length: {modelTestResult.capabilities.context_length.toLocaleString()} tokens
+                                {t('pages:settings.api.contextLength')}: {modelTestResult.capabilities.context_length.toLocaleString()} tokens
                               </div>
                             )}
                             {modelTestResult.capabilities.max_tokens && (
                               <div className="text-xs text-gray-600">
-                                Max Output: {modelTestResult.capabilities.max_tokens.toLocaleString()} tokens
+                                {t('pages:settings.api.maxOutput')}: {modelTestResult.capabilities.max_tokens.toLocaleString()} tokens
                               </div>
                             )}
                           </div>
@@ -714,13 +716,13 @@ export const SettingsPage: React.FC = () => {
                       
                       {modelTestResult.response && (
                         <div className="text-sm">
-                          <strong>Test Response:</strong> {modelTestResult.response}
+                          <strong>{t('pages:settings.api.testResponse')}:</strong> {modelTestResult.response}
                         </div>
                       )}
                       
                       {modelTestResult.usage && (
                         <div className="text-xs text-gray-600">
-                          Token Usage: {modelTestResult.usage.total_tokens || 'N/A'} total
+                          {t('pages:settings.api.tokenUsage')}: {modelTestResult.usage.total_tokens || t('common:labels.notAvailable')} {t('common:labels.total')}
                         </div>
                       )}
                     </div>
@@ -728,7 +730,7 @@ export const SettingsPage: React.FC = () => {
                   
                   {!modelTestResult.available && modelTestResult.error && (
                     <div className="mt-2 text-sm text-red-700">
-                      <strong>Error:</strong> {modelTestResult.error}
+                      <strong>{t('common:labels.error')}:</strong> {modelTestResult.error}
                     </div>
                   )}
                 </div>
@@ -739,11 +741,11 @@ export const SettingsPage: React.FC = () => {
 
           {activeTab === 'processing' && (
             <div className="space-y-6">
-              <h3 className="text-lg font-medium text-gray-900">Processing Settings</h3>
+              <h3 className="text-lg font-medium text-gray-900">{t('pages:settings.processing.title')}</h3>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Max Paper Length (characters)
+                  {t('pages:settings.processing.maxPaperLength.label')}
                 </label>
                 <input
                   type="number"
@@ -754,13 +756,13 @@ export const SettingsPage: React.FC = () => {
                   className="input w-full"
                 />
                 <p className="text-sm text-gray-500 mt-1">
-                  Maximum characters to send to LLM (1,000 - 200,000)
+                  {t('pages:settings.processing.maxPaperLength.description')}
                 </p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Request Timeout (seconds)
+                  {t('pages:settings.processing.requestTimeout.label')}
                 </label>
                 <input
                   type="number"
@@ -771,13 +773,13 @@ export const SettingsPage: React.FC = () => {
                   className="input w-full"
                 />
                 <p className="text-sm text-gray-500 mt-1">
-                  HTTP request timeout (5 - 300 seconds)
+                  {t('pages:settings.processing.requestTimeout.description')}
                 </p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Default Output Format
+                  {t('pages:settings.processing.defaultOutputFormat.label')}
                 </label>
                 <select
                   value={formData.default_output_format || ''}
@@ -791,15 +793,15 @@ export const SettingsPage: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Default Language
+                  {t('pages:settings.processing.defaultLanguage.label')}
                 </label>
                 <select
                   value={formData.default_language || ''}
                   onChange={(e) => updateFormField('default_language', e.target.value)}
                   className="input w-full"
                 >
-                  <option value="en">English</option>
-                  <option value="zh">Chinese</option>
+                  <option value="en">{t('common:labels.english')}</option>
+                  <option value="zh">{t('common:labels.chinese')}</option>
                 </select>
               </div>
             </div>
@@ -807,11 +809,11 @@ export const SettingsPage: React.FC = () => {
 
           {activeTab === 'image' && (
             <div className="space-y-6">
-              <h3 className="text-lg font-medium text-gray-900">Image Processing</h3>
+              <h3 className="text-lg font-medium text-gray-900">{t('pages:settings.image.title')}</h3>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Max Image Size (MB)
+                  {t('pages:settings.image.maxImageSize.label')}
                 </label>
                 <input
                   type="number"
@@ -823,13 +825,13 @@ export const SettingsPage: React.FC = () => {
                   className="input w-full"
                 />
                 <p className="text-sm text-gray-500 mt-1">
-                  Maximum image file size (0.1 - 100 MB)
+                  {t('pages:settings.image.maxImageSize.description')}
                 </p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Image Quality (1-100)
+                  {t('pages:settings.image.imageQuality.label')}
                 </label>
                 <input
                   type="number"
@@ -840,13 +842,13 @@ export const SettingsPage: React.FC = () => {
                   className="input w-full"
                 />
                 <p className="text-sm text-gray-500 mt-1">
-                  JPEG compression quality (higher = better quality, larger files)
+                  {t('pages:settings.image.imageQuality.description')}
                 </p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Max Image Dimension (pixels)
+                  {t('pages:settings.image.maxImageDimension.label')}
                 </label>
                 <input
                   type="number"
@@ -857,7 +859,7 @@ export const SettingsPage: React.FC = () => {
                   className="input w-full"
                 />
                 <p className="text-sm text-gray-500 mt-1">
-                  Maximum width/height for images (100 - 5,000 pixels)
+                  {t('pages:settings.image.maxImageDimension.description')}
                 </p>
               </div>
             </div>
@@ -865,31 +867,31 @@ export const SettingsPage: React.FC = () => {
 
           {activeTab === 'system' && (
             <div className="space-y-6">
-              <h3 className="text-lg font-medium text-gray-900">System Settings</h3>
+              <h3 className="text-lg font-medium text-gray-900">{t('pages:settings.system.title')}</h3>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Log Level
+                  {t('pages:settings.system.logLevel.label')}
                 </label>
                 <select
                   value={formData.log_level || ''}
                   onChange={(e) => updateFormField('log_level', e.target.value)}
                   className="input w-full"
                 >
-                  <option value="DEBUG">Debug</option>
-                  <option value="INFO">Info</option>
-                  <option value="WARNING">Warning</option>
-                  <option value="ERROR">Error</option>
+                  <option value="DEBUG">{t('common:labels.debug')}</option>
+                  <option value="INFO">{t('common:labels.info')}</option>
+                  <option value="WARNING">{t('common:labels.warning')}</option>
+                  <option value="ERROR">{t('common:labels.error')}</option>
                 </select>
                 <p className="text-sm text-gray-500 mt-1">
-                  Application logging level
+                  {t('pages:settings.system.logLevel.description')}
                 </p>
               </div>
 
               {config?.colors && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Color Scheme
+                    {t('pages:settings.system.colorScheme.label')}
                   </label>
                   <div className="grid grid-cols-2 gap-4">
                     {Object.entries(config.colors).map(([key, color]) => (
@@ -907,26 +909,26 @@ export const SettingsPage: React.FC = () => {
               )}
 
               <div className="bg-gray-50 rounded-md p-4">
-                <h4 className="font-medium text-gray-900 mb-2">Configuration Files</h4>
+                <h4 className="font-medium text-gray-900 mb-2">{t('pages:settings.system.configurationFiles.title')}</h4>
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center justify-between">
-                    <span>Environment file (.env)</span>
+                    <span>{t('pages:settings.system.configurationFiles.envFile')}</span>
                     <span className={`px-2 py-1 rounded text-xs ${
                       validation?.env_file_exists 
                         ? 'bg-green-100 text-green-800' 
                         : 'bg-gray-100 text-gray-800'
                     }`}>
-                      {validation?.env_file_exists ? 'Exists' : 'Not found'}
+                      {validation?.env_file_exists ? t('pages:settings.system.configurationFiles.exists') : t('pages:settings.system.configurationFiles.notFound')}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>Config file (config.json)</span>
+                    <span>{t('pages:settings.system.configurationFiles.configFile')}</span>
                     <span className={`px-2 py-1 rounded text-xs ${
                       validation?.config_file_exists 
                         ? 'bg-green-100 text-green-800' 
                         : 'bg-gray-100 text-gray-800'
                     }`}>
-                      {validation?.config_file_exists ? 'Exists' : 'Not found'}
+                      {validation?.config_file_exists ? t('pages:settings.system.configurationFiles.exists') : t('pages:settings.system.configurationFiles.notFound')}
                     </span>
                   </div>
                 </div>

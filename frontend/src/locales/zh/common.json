@@ -24,7 +24,8 @@
     "processPaper": "处理论文",
     "saveChanges": "保存更改",
     "resetToDefaults": "重置为默认值",
-    "reloadModels": "重新加载模型"
+    "reloadModels": "重新加载模型",
+    "testModel": "测试模型"
   },
   "status": {
     "success": "成功",
@@ -36,7 +37,10 @@
     "pending": "待处理",
     "fetching": "获取中",
     "extracting": "提取中",
-    "generating": "生成中"
+    "generating": "生成中",
+    "available": "可用",
+    "notAvailable": "不可用",
+    "testing": "测试中..."
   },
   "labels": {
     "language": "语言",
@@ -51,6 +55,16 @@
     "status": "状态",
     "progress": "进度",
     "settings": "设置",
-    "configuration": "配置"
+    "configuration": "配置",
+    "yes": "是",
+    "no": "否",
+    "total": "总计",
+    "error": "错误",
+    "debug": "调试",
+    "info": "信息",
+    "warning": "警告",
+    "english": "English",
+    "chinese": "中文",
+    "notAvailable": "不适用"
   }
 }

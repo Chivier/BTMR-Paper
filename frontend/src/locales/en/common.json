@@ -24,7 +24,8 @@
     "processPaper": "Process Paper",
     "saveChanges": "Save Changes",
     "resetToDefaults": "Reset to Defaults",
-    "reloadModels": "Reload Models"
+    "reloadModels": "Reload Models",
+    "testModel": "Test Model"
   },
   "status": {
     "success": "Success",
@@ -36,7 +37,10 @@
     "pending": "Pending",
     "fetching": "Fetching",
     "extracting": "Extracting",
-    "generating": "Generating"
+    "generating": "Generating",
+    "available": "Available",
+    "notAvailable": "Not Available",
+    "testing": "Testing..."
   },
   "labels": {
     "language": "Language",
@@ -51,6 +55,16 @@
     "status": "Status",
     "progress": "Progress",
     "settings": "Settings",
-    "configuration": "Configuration"
+    "configuration": "Configuration",
+    "yes": "Yes",
+    "no": "No",
+    "total": "total",
+    "error": "Error",
+    "debug": "Debug",
+    "info": "Info",
+    "warning": "Warning",
+    "english": "English",
+    "chinese": "Chinese",
+    "notAvailable": "N/A"
   }
 }

@@ -76,7 +76,16 @@
         "label": "翻译模型",
         "description": "用于翻译任务的模型",
         "customDescription": "输入您的API提供商支持的自定义模型ID"
-      }
+      },
+      "modelTestResult": "模型测试结果",
+      "modelId": "模型 ID",
+      "capabilities": "功能",
+      "imageSupport": "图像支持",
+      "fileUploadSupport": "文件上传支持",
+      "contextLength": "上下文长度",
+      "maxOutput": "最大输出",
+      "testResponse": "测试响应",
+      "tokenUsage": "Token 使用量"
     },
     "processing": {
       "title": "处理设置",
@@ -138,7 +147,16 @@
       "savingConfiguration": "正在保存配置...",
       "validatingConfiguration": "正在验证配置...",
       "resetting": "正在重置...",
-      "reloading": "重新加载中..."
+      "reloading": "重新加载中...",
+      "reloadModelsTooltip": "保存配置并重新加载模型",
+      "testModelTooltip": "测试当前模型是否可用并显示功能",
+      "pleaseSelectModel": "请选择要测试的模型",
+      "modelAvailable": "模型 {{model}} 可用！",
+      "modelTestSuccessful": "模型测试成功：{{model}}",
+      "modelTestFailed": "模型测试失败：{{error}}",
+      "failedToTestModel": "测试模型失败：{{error}}",
+      "failedToLoadModelsNote": "加载模型失败。请检查您的API配置。",
+      "networkError": "网络错误"
     }
   }
 }
