@@ -207,13 +207,21 @@ async def validate_configuration():
 
 
 @router.get("/config/models")
-async def get_available_models(
-    api_key: Optional[str] = Query(None, description="Temporary API key for testing"),
-    api_base: Optional[str] = Query(None, description="Temporary API base URL for testing")
-):
+async def get_available_models():
     """Get list of available AI models."""
     try:
-        return config_service.get_available_models(api_key, api_base)
+        return config_service.get_available_models()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/config/test-model")
+async def test_model(
+    model_id: str = Query(..., description="Model ID to test")
+):
+    """Test if a specific model is available and get its capabilities."""
+    try:
+        return config_service.test_model(model_id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

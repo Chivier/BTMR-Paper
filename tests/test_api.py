@@ -12,6 +12,7 @@ def test_openai():
     """Test OpenAI API connectivity"""
     api_key = os.getenv("OPENAI_API_KEY")
     base_url = os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1")
+    model_name = os.getenv("MODEL_NAME", "gpt-3.5-turbo")
     
     if not api_key:
         print("❌ OPENAI_API_KEY not found in .env")
@@ -19,6 +20,7 @@ def test_openai():
     
     print(f"🔑 API Key: {api_key[:20]}...")
     print(f"🌐 Base URL: {base_url}")
+    print(f"🤖 Model: {model_name}")
     
     try:
         client = openai.OpenAI(
@@ -28,7 +30,7 @@ def test_openai():
         
         # Simple test request
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",  # Use a basic model for testing
+            model=model_name,
             messages=[{"role": "user", "content": "Hello, just testing the API"}],
             max_tokens=10
         )

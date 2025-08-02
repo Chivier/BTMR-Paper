@@ -20,6 +20,8 @@ class ConfigurationService:
         self.env_file = Path(".env")
         self.config_file = Path("config.json")
         load_dotenv()
+        # Reload Config class attributes from environment after loading .env
+        self._reload_config_from_env()
         # Load config file on startup
         self._load_config_file()
     
@@ -96,6 +98,14 @@ class ConfigurationService:
         
         return self.get_configuration()
     
+    def _reload_config_from_env(self):
+        """Reload Config class attributes from environment variables."""
+        Config.OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+        Config.OPENAI_API_BASE = os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1")
+        Config.DEFAULT_MODEL = os.getenv("MODEL_NAME", "gpt-4-turbo")
+        Config.TRANSLATE_MODEL = os.getenv("TRANSLATE_MODEL", "gpt-4-turbo")
+        Config.LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+
     def _save_config_file(self):
         """Save non-environment configuration to JSON file."""
         config_data = {
@@ -188,13 +198,13 @@ class ConfigurationService:
             "env_file_exists": self.env_file.exists()
         }
     
-    def get_available_models(self, temp_api_key: str = None, temp_api_base: str = None) -> Dict[str, Any]:
+    def get_available_models(self) -> Dict[str, Any]:
         """Get list of available models from OpenAI API."""
         import requests
         
-        # Use temporary values if provided, otherwise use config
-        api_key = temp_api_key or Config.OPENAI_API_KEY
-        api_base = temp_api_base or Config.OPENAI_API_BASE
+        # Always use credentials from config/environment
+        api_key = Config.OPENAI_API_KEY
+        api_base = Config.OPENAI_API_BASE
         
         # Check if API key is available
         if not api_key:
@@ -269,6 +279,166 @@ class ConfigurationService:
                 "custom_note": "Using fallback model list"
             }
     
+    def test_model(self, model_id: str) -> Dict[str, Any]:
+        """Test if a specific model is available and get its capabilities."""
+        import requests
+        
+        # Always use credentials from config/environment
+        api_key = Config.OPENAI_API_KEY
+        api_base = Config.OPENAI_API_BASE
+        
+        if not api_key:
+            return {
+                "available": False,
+                "error": "OpenAI API key not configured. Please set your API key in the settings.",
+                "capabilities": {
+                    "supports_images": False,
+                    "supports_files": False,
+                    "max_tokens": None,
+                    "context_length": None
+                }
+            }
+        
+        try:
+            # Test model with a simple completion request
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            }
+            
+            api_base = api_base.rstrip('/')
+            test_payload = {
+                "model": model_id,
+                "messages": [
+                    {"role": "user", "content": "Hello, respond with 'Available' if you can process this request."}
+                ],
+                "max_tokens": 10,
+                "temperature": 0
+            }
+            
+            response = requests.post(
+                f"{api_base}/chat/completions",
+                headers=headers,
+                json=test_payload,
+                timeout=30
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Determine model capabilities based on model ID
+                capabilities = self._determine_model_capabilities(model_id)
+                
+                return {
+                    "available": True,
+                    "model_id": model_id,
+                    "response": data.get('choices', [{}])[0].get('message', {}).get('content', ''),
+                    "usage": data.get('usage', {}),
+                    "capabilities": capabilities,
+                    "test_successful": True
+                }
+            else:
+                error_data = response.json() if response.headers.get('content-type', '').startswith('application/json') else {}
+                return {
+                    "available": False,
+                    "error": error_data.get('error', {}).get('message', f"HTTP {response.status_code}"),
+                    "status_code": response.status_code,
+                    "capabilities": {
+                        "supports_images": False,
+                        "supports_files": False,
+                        "max_tokens": None,
+                        "context_length": None
+                    }
+                }
+                
+        except requests.exceptions.Timeout:
+            return {
+                "available": False, 
+                "error": "Request timeout - model may be slow or unavailable",
+                "capabilities": {
+                    "supports_images": False,
+                    "supports_files": False,
+                    "max_tokens": None,
+                    "context_length": None
+                }
+            }
+        except requests.exceptions.RequestException as e:
+            return {
+                "available": False,
+                "error": f"Network error: {str(e)}",
+                "capabilities": {
+                    "supports_images": False,
+                    "supports_files": False,
+                    "max_tokens": None,
+                    "context_length": None
+                }
+            }
+        except Exception as e:
+            return {
+                "available": False,
+                "error": f"Unexpected error: {str(e)}",
+                "capabilities": {
+                    "supports_images": False,
+                    "supports_files": False,
+                    "max_tokens": None,
+                    "context_length": None
+                }
+            }
+    
+    def _determine_model_capabilities(self, model_id: str) -> Dict[str, Any]:
+        """Determine model capabilities based on model ID patterns."""
+        model_id_lower = model_id.lower()
+        
+        # GPT-4 Vision models
+        if any(x in model_id_lower for x in ['gpt-4-vision', 'gpt-4-turbo', 'gpt-4o']):
+            return {
+                "supports_images": True,
+                "supports_files": True,
+                "max_tokens": 4096 if 'gpt-4o-mini' in model_id_lower else 4096,
+                "context_length": 128000,
+                "vision_capable": True
+            }
+        
+        # GPT-4 standard models
+        elif model_id_lower.startswith('gpt-4'):
+            return {
+                "supports_images": False,
+                "supports_files": True,
+                "max_tokens": 4096,
+                "context_length": 8192 if model_id_lower == 'gpt-4' else 32768,
+                "vision_capable": False
+            }
+        
+        # GPT-3.5 models
+        elif model_id_lower.startswith('gpt-3.5'):
+            return {
+                "supports_images": False,
+                "supports_files": False,
+                "max_tokens": 4096,
+                "context_length": 16385,
+                "vision_capable": False
+            }
+        
+        # Claude models (for custom endpoints)
+        elif 'claude' in model_id_lower:
+            return {
+                "supports_images": True,
+                "supports_files": True,
+                "max_tokens": 4096,
+                "context_length": 200000,
+                "vision_capable": True
+            }
+        
+        # Default/unknown models
+        else:
+            return {
+                "supports_images": False,
+                "supports_files": False,
+                "max_tokens": None,
+                "context_length": None,
+                "vision_capable": False
+            }
+
     def _get_fallback_models(self) -> list:
         """Get fallback model list when API is unavailable."""
         return [
