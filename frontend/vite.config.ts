@@ -29,6 +29,8 @@ export default defineConfig({
   },
   preview: {
     port: parseInt(process.env.FRONTEND_PORT || '3000'),
+    host: true, // Listen on all addresses
+    strictPort: true,
     proxy: {
       '/api': {
         target: process.env.VITE_API_BASE_URL || `http://localhost:${process.env.BACKEND_PORT || '8000'}`,
