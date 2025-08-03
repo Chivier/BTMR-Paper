@@ -1,12 +1,29 @@
 # BTMR - Beautiful Text Mining Reader 📚🤖
 
-A modern web application for extracting and summarizing academic papers using AI. BTMR provides both a powerful Python backend API and a beautiful React frontend interface.
+A modern, AI-powered web application for extracting, analyzing, and summarizing academic papers. BTMR transforms complex research papers into digestible, structured summaries with a beautiful interface.
+
+## 📑 Table of Contents
+
+- [Overview](#-overview)
+- [Features](#-features)
+- [Quick Start](#-quick-start)
+- [Installation](#-installation)
+  - [Option 1: One-Command Startup](#option-1-one-command-startup-recommended)
+  - [Option 2: Manual Setup](#option-2-manual-setup)
+- [Docker Deployment](#-docker-deployment)
+- [Usage Guide](#-usage-guide)
+- [API Documentation](#-api-documentation)
+- [Configuration](#-configuration)
+- [Troubleshooting](#-troubleshooting)
+- [Contributing](#-contributing)
+- [License](#-license)
 
 ## 🌟 Overview
 
-BTMR (Beautiful Text Mining Reader) is an intelligent academic paper processing tool that leverages AI to automatically extract, analyze, and summarize research papers from various sources. Whether you're a researcher, student, or academic enthusiast, BTMR helps you quickly digest complex papers and focus on what matters most.
+BTMR (Beautiful Text Mining Reader) is an intelligent academic paper processing tool that leverages AI to automatically extract, analyze, and summarize research papers from various sources. Perfect for researchers, students, and academic enthusiasts who want to quickly digest complex papers and focus on what matters most.
 
 ### 🎯 Key Benefits
+<<<<<<< Updated upstream
 - **Time Saving**: Automatically extract and summarize papers in minutes
 - **Multi-format Support**: Process ArXiv URLs and PDFs
 - **Beautiful Output**: Generate clean HTML or PDF documents with embedded figures
@@ -30,27 +47,98 @@ BTMR (Beautiful Text Mining Reader) is an intelligent academic paper processing 
 - **🔄 Real-time Updates**: Live progress tracking during paper processing
 - **📚 Paper Management**: Browse, search, and organize processed papers
 - **📤 File Upload**: Drag-and-drop file upload interface
+=======
 
-## Quick Start
+- **⚡ Time Saving**: Process and summarize papers in minutes, not hours
+- **🔗 Multi-format Support**: ArXiv URLs, PDFs, and web links
+- **📊 Beautiful Output**: Clean HTML or PDF documents with embedded figures
+- **🌐 Multilingual**: Support for English and Chinese with full i18n
+- **📱 Responsive Design**: Works seamlessly across all devices
+
+## 🚀 Features
+
+### Backend Capabilities
+- 📄 **Paper Processing**: Extract content from ArXiv URLs, PDFs, and web links
+- 🤖 **AI-Powered Analysis**: Structured summaries using advanced LLMs
+- 💾 **Multiple Formats**: Generate HTML and PDF outputs
+- ⚡ **Real-time Progress**: WebSocket support for live updates
+- 📊 **Database Management**: SQLite-based metadata storage with migrations
+- 🔗 **RESTful API**: Comprehensive API with OpenAPI documentation
+- 🖼️ **Image Processing**: Advanced extraction and optimization
+
+### Frontend Features
+- ⚛️ **Modern Tech Stack**: React 18, TypeScript, Tailwind CSS
+- 🌐 **Internationalization**: Full i18n support (English/Chinese)
+- 📱 **Responsive Design**: Mobile-first approach
+- 🔄 **Real-time Updates**: Live progress tracking
+- 📚 **Paper Management**: Browse, search, and organize papers
+- 📤 **File Upload**: Intuitive drag-and-drop interface
+>>>>>>> Stashed changes
+
+## 🚀 Quick Start
 
 ### 📋 Prerequisites
+<<<<<<< Updated upstream
 - Python 3.9 or higher
 - Node.js 18 or higher
-- OpenAI API key (or OpenAI compatiable LLM provider's key)
-- [uv](https://docs.astral.sh/uv/) for Python package management
+- OpenAI API key
+- [uv](https://docs.astral.sh/uv/) for Python package management (recommended)
+=======
+>>>>>>> Stashed changes
 
-### 🛠️ Option 1: One-Command Startup (Recommended)
+- **Python**: 3.9 or higher
+- **Node.js**: 18 or higher  
+- **LLM API Key**: OpenAI or compatible provider
+- **Package Manager**: [uv](https://docs.astral.sh/uv/) (recommended)
 
-The easiest way to start BTMR is using the included startup script:
+### ⚡ Get Started in 3 Steps
+
+1. **Clone and Setup**
+   ```bash
+   git clone https://github.com/Chivier/BTMR-Paper.git
+   cd BTMR-Paper
+   cp .env.example .env
+   ```
+
+2. **Configure Your API Key**
+   Edit `.env` and add your LLM provider's API key:
+   ```env
+   OPENAI_API_KEY=your_api_key_here
+   ```
+
+3. **Launch Application**
+   ```bash
+   ./startup.sh
+   ```
+
+🎉 **That's it!** The application will be available at:
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:8000
+- **API Docs**: http://localhost:8000/docs
+
+### 🛠️ Service Management
 
 ```bash
-# Clone the repository
-git clone <repository-url>
-cd BTMR-Paper
+./startup.sh status    # Check service status
+./startup.sh stop      # Stop all services  
+./startup.sh restart   # Restart all services
+./startup.sh help      # Show all commands
+```
 
-# Set up environment variables
+---
+
+## 📦 Installation
+
+### Option 1: One-Command Startup (Recommended)
+
+The simplest way to get BTMR running:
+
+```bash
+git clone https://github.com/Chivier/BTMR-Paper.git
+cd BTMR-Paper
 cp .env.example .env
-# Edit .env and add your LLM providers API key
+<<<<<<< Updated upstream
+# Edit .env and add your OpenAI API key
 
 # Start all services with one command
 ./startup.sh
@@ -70,43 +158,50 @@ Service management commands:
 ./startup.sh restart   # Restart all services
 ./startup.sh help      # Show help
 ```
+=======
+# Edit .env with your API key
+./startup.sh
+```
+
+**What the startup script does:**
+- ✅ Installs all dependencies automatically
+- ✅ Initializes SQLite database
+- ✅ Migrates existing data if present
+- ✅ Starts both backend and frontend servers
+- ✅ Provides health monitoring and service management
+>>>>>>> Stashed changes
 
 ### Option 2: Manual Setup
 
 For development or custom configurations:
 
-### Backend Setup
+#### 🔧 Backend Setup
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd BTMR-Paper
-   ```
+```bash
+# 1. Clone repository
+git clone https://github.com/Chivier/BTMR-Paper.git
+cd BTMR-Paper
 
+<<<<<<< Updated upstream
 2. **Install Python dependencies**
    ```bash
    # Using uv (recommended)
    uv sync
    ```
+=======
+# 2. Install dependencies
+uv sync
+>>>>>>> Stashed changes
 
-3. **Set up environment variables**
-   ```bash
-   cp .env.example .env
-   ```
-   
-   Edit `.env` and add your OpenAI API key:
-   ```env
-   OPENAI_API_KEY=your_openai_api_key_here
-   OPENAI_API_BASE=https://api.openai.com/v1  # Optional
-   MODEL_NAME=gpt-4  # Optional, defaults to gpt-3.5-turbo
-   ```
+# 3. Configure environment
+cp .env.example .env
+# Edit .env with your settings
 
-4. **Initialize the database** (optional - done automatically on first run)
-   ```bash
-   # Initialize SQLite database
-   uv run python -c "from src.database import DatabaseMetadataManager; DatabaseMetadataManager()"
-   ```
+# 4. Start backend server
+uv run python -m src.api.main
+```
 
+<<<<<<< Updated upstream
 5. **Start the backend server**
    ```bash
    # Using uv
@@ -115,150 +210,320 @@ For development or custom configurations:
    # With custom options
    uv run python -m src.api.main --host 0.0.0.0 --port 8000 --reload
    ```
+=======
+**Backend will be available at:**
+- 🌐 Main API: http://localhost:8000
+- 📖 API Documentation: http://localhost:8000/docs
+- 📚 Alternative Docs: http://localhost:8000/redoc
+>>>>>>> Stashed changes
 
-   The API will be available at:
-   - **Main API**: http://localhost:8000
-   - **API Documentation**: http://localhost:8000/docs
-   - **Alternative Docs**: http://localhost:8000/redoc
+#### 🎨 Frontend Setup
 
-### Frontend Setup
+```bash
+# 1. Navigate to frontend
+cd frontend
 
-1. **Navigate to frontend directory**
-   ```bash
-   cd frontend
-   ```
+# 2. Install dependencies
+npm install
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+# 3. Start development server
+npm run dev
+```
 
-3. **Start the development server**
-   ```bash
-   npm run dev
-   ```
+**Frontend will be available at:** http://localhost:3000
 
-   The frontend will be available at: http://localhost:3000
+#### 🏗️ Production Build
 
-### Production Build
+```bash
+# Build frontend
+cd frontend && npm run build
 
-1. **Build the frontend**
-   ```bash
-   cd frontend
-   npm run build
-   ```
+# Start backend (serves frontend automatically)
+uv run python -m src.api.main --host 0.0.0.0 --port 8000
+```
 
+<<<<<<< Updated upstream
 2. **Start the backend** (it will serve the frontend automatically)
    ```bash
    uv run python -m src.api.main --host 0.0.0.0 --port 8000
    ```
+=======
+**Complete application:** http://localhost:8000
+>>>>>>> Stashed changes
 
-   The complete application will be available at: http://localhost:8000
+---
 
 ## 🐳 Docker Deployment
 
-BTMR can be easily deployed using Docker with separate containers for frontend and backend services.
+Deploy BTMR using Docker for production environments or isolated development.
 
-### Quick Start with Docker
+### 🚀 Quick Docker Start
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd BTMR-Paper
-   ```
+```bash
+# Clone and setup
+git clone https://github.com/Chivier/BTMR-Paper.git
+cd BTMR-Paper
+cp .env.example .env
+# Edit .env with your API key
 
-2. **Set up environment variables** (You can also set it on web page)
+<<<<<<< Updated upstream
+2. **Set up environment variables**
    ```bash
    cp .env.example .env
    # Edit .env and add your OpenAI API key
    ```
+=======
+# Launch with Docker Compose
+docker-compose up --build
+```
+>>>>>>> Stashed changes
 
-3. **Build and run with Docker Compose**
-   ```bash
-   docker-compose up --build
-   ```
+**Services will be available at:**
+- 🎨 Frontend: http://localhost:3000
+- ⚙️ Backend API: http://localhost:8000
 
-   The services will be available at:
-   - Frontend: http://localhost:3000 (or the port specified as FRONTEND_PORT)
-   - Backend API: http://localhost:8000 (or the port specified as BACKEND_PORT)
+### 🏗️ Docker Architecture
 
-### Docker Architecture
+| Service | Technology | Port | Purpose |
+|---------|------------|------|---------|
+| **Backend** | FastAPI + uv | 8000 | API server and paper processing |
+| **Frontend** | React + Vite | 3000 | Web interface |
 
-The Docker setup uses two separate services:
-- **Backend**: Python FastAPI server managed with uv, running on port 8000
-- **Frontend**: React application served by Vite preview server, running on port 3000
-
-Both services communicate through the Docker network, and the frontend connects to the backend API.
-
-### Environment Variables for Docker
+### ⚙️ Docker Configuration
 
 Key environment variables in `.env`:
 ```env
-# API Configuration
-OPENAI_API_KEY=your_openai_api_key_here
+# API Configuration  
+OPENAI_API_KEY=your_api_key_here
 OPENAI_API_BASE=https://api.openai.com/v1
-MODEL_NAME=gpt-4.1
-TRANSLATE_MODEL=gpt-4.1
+MODEL_NAME=gpt-4o
+TRANSLATE_MODEL=gpt-4o
 
 # Port Configuration
 FRONTEND_PORT=3000
 BACKEND_PORT=8000
 
-# Log Level
-LOG_LEVEL='DEBUG'
+# Logging
+LOG_LEVEL=INFO
 ```
 
-### Docker Commands
+### 🛠️ Docker Commands
 
-```bash
-# Start services
-docker-compose up
+| Command | Purpose |
+|---------|---------|
+| `docker-compose up` | Start services |
+| `docker-compose up -d` | Start in background |
+| `docker-compose logs -f` | View live logs |
+| `docker-compose down` | Stop services |
+| `docker-compose up --build` | Rebuild and start |
 
-# Start services in background
-docker-compose up -d
+### 💾 Persistent Data
 
-# View logs
-docker-compose logs -f
-
-# Stop services
-docker-compose down
-
-# Rebuild after code changes
-docker-compose up --build
-```
-
-### Volumes
-
-The Docker setup includes volumes for persistent data:
-- `./output`: Stores generated paper summaries
-- `./uploads`: Stores uploaded files
-- `./logs`: Application logs
-- `./config.json`: Additional configuration
-
-## Usage
-
-### Processing Papers
-
-#### Via Web Interface
-1. Open the frontend at http://localhost:3000
-2. Navigate to the home page
-3. Click "Get Started" or use the paper processing form
-4. Enter an ArXiv URL, upload a PDF, or provide a web URL
-5. Select output format (HTML/PDF) and language
-6. Click "Process" and monitor real-time progress
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- OpenAI for providing the GPT models
-- ArXiv for the open access paper repository
-- The open-source community for the excellent libraries used
-- SQLite for the embedded database solution
-- FastAPI and React communities for the excellent frameworks
+Docker volumes ensure data persistence:
+- `./output` → Generated summaries
+- `./uploads` → Uploaded files  
+- `./logs` → Application logs
+- `./config.json` → Configuration
 
 ---
 
-For more information, visit the [project repository](https://github.com/Chivier/BTMR-Paper) or check the API documentation at http://localhost:8000/docs when running the server.
+## 📖 Usage Guide
+
+### 🌐 Web Interface
+
+1. **Access the Application**
+   - Open http://localhost:3000 in your browser
+   - Choose your preferred language (English/Chinese)
+
+2. **Process a Paper**
+   - Navigate to the home page
+   - Choose your input method:
+     - 🔗 **ArXiv URL**: `https://arxiv.org/abs/2301.00000`
+     - 📄 **PDF Upload**: Drag and drop or click to select
+     - 🌐 **Web URL**: Any accessible research paper link
+   
+3. **Configure Output**
+   - Select format: HTML or PDF
+   - Choose language for summary
+   - Set processing options
+
+4. **Monitor Progress**
+   - Real-time progress updates via WebSocket
+   - View processing logs and status
+   - Download results when complete
+
+### 📚 Managing Papers
+
+- **Browse Library**: View all processed papers
+- **Search Papers**: Find papers by title, authors, or ArXiv ID
+- **View Details**: Access full summaries and metadata
+- **Re-download**: Get papers in different formats
+
+### 🔧 API Usage
+
+#### Process Paper via API
+
+```bash
+# Process ArXiv paper
+curl -X POST "http://localhost:8000/api/papers/process" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "arxiv_url": "https://arxiv.org/abs/2301.00000",
+    "output_format": "html",
+    "language": "en"
+  }'
+
+# Upload and process PDF
+curl -X POST "http://localhost:8000/api/papers/upload" \
+  -F "file=@paper.pdf" \
+  -F "output_format=pdf" \
+  -F "language=zh"
+```
+
+#### Get Paper List
+
+```bash
+# Get all papers
+curl "http://localhost:8000/api/papers"
+
+# Search papers
+curl "http://localhost:8000/api/papers?search=transformer"
+```
+
+### 🔧 Configuration
+
+Edit `.env` or use the web interface settings:
+
+```env
+# LLM Configuration
+OPENAI_API_KEY=your_key_here
+OPENAI_API_BASE=https://api.openai.com/v1
+MODEL_NAME=gpt-4o
+TRANSLATE_MODEL=gpt-4o
+
+# Processing Options
+MAX_PAPER_SIZE_MB=50
+OUTPUT_LANGUAGE=en
+DEFAULT_OUTPUT_FORMAT=html
+
+# Server Settings
+HOST=0.0.0.0
+PORT=8000
+LOG_LEVEL=INFO
+```
+
+---
+
+## 🛠️ API Documentation
+
+### Endpoints Overview
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/papers` | GET | List all papers |
+| `/api/papers/process` | POST | Process paper from URL |
+| `/api/papers/upload` | POST | Upload and process PDF |
+| `/api/papers/{id}` | GET | Get paper details |
+| `/api/papers/{id}/download` | GET | Download paper output |
+| `/api/config` | GET/PUT | Manage configuration |
+
+### Interactive Documentation
+
+When running the server, visit:
+- **Swagger UI**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
+
+---
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+#### ❌ "API Key Not Found"
+**Solution**: Ensure your `.env` file contains a valid API key:
+```env
+OPENAI_API_KEY=sk-your-actual-key-here
+```
+
+#### ❌ "Port Already in Use"
+**Solution**: Stop existing services or change ports:
+```bash
+./startup.sh stop
+# Or change ports in .env
+FRONTEND_PORT=3001
+BACKEND_PORT=8001
+```
+
+#### ❌ "PDF Processing Failed"
+**Solution**: Check file size and format:
+- Max file size: 50MB
+- Supported formats: PDF
+- Ensure PDF is not password-protected
+
+#### ❌ "Frontend Not Loading"
+**Solution**: Check if both services are running:
+```bash
+./startup.sh status
+# If not running:
+./startup.sh restart
+```
+
+### Getting Help
+
+1. Check the logs: `./logs/backend.log`
+2. Verify configuration: Visit http://localhost:8000/api/config
+3. Test API directly: http://localhost:8000/docs
+4. Open an issue: [GitHub Issues](https://github.com/Chivier/BTMR-Paper/issues)
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [DEVELOPMENT.md](DEVELOPMENT.md) for detailed guidelines.
+
+### Quick Start for Contributors
+
+```bash
+# Fork and clone the repository
+git clone https://github.com/yourusername/BTMR-Paper.git
+cd BTMR-Paper
+
+# Create development environment
+./startup.sh
+# Make your changes
+# Test thoroughly
+# Submit a pull request
+```
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- **OpenAI** for providing powerful GPT models
+- **ArXiv** for the open access paper repository
+- **FastAPI & React** communities for excellent frameworks
+- **SQLite** for the embedded database solution
+- **Open Source Community** for the incredible libraries and tools
+
+---
+
+## 🔗 Links
+
+- 📝 **Repository**: [GitHub](https://github.com/Chivier/BTMR-Paper)
+- 📖 **API Documentation**: http://localhost:8000/docs (when running)
+- 🐛 **Issue Tracker**: [GitHub Issues](https://github.com/Chivier/BTMR-Paper/issues)
+- 💬 **Discussions**: [GitHub Discussions](https://github.com/Chivier/BTMR-Paper/discussions)
+
+---
+
+<div align="center">
+
+**Made with ❤️ for the research community**
+
+[⭐ Star us on GitHub](https://github.com/Chivier/BTMR-Paper) | [🐛 Report Issues](https://github.com/Chivier/BTMR-Paper/issues) | [💡 Request Features](https://github.com/Chivier/BTMR-Paper/discussions)
+
+</div>
