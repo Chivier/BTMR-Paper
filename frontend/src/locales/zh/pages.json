@@ -175,7 +175,7 @@
     "title": "论文",
     "processNewPaper": "处理新论文",
     "search": {
-      "placeholder": "按标题搜索论文...",
+      "placeholder": "按标题、作者或arXiv ID搜索论文...",
       "label": "搜索",
       "clearSearch": "清除搜索",
       "noResults": "未找到匹配的论文。",

@@ -33,10 +33,39 @@ export const PapersPage: React.FC = () => {
       return papers;
     }
     
+    const query = searchQuery.toLowerCase();
+    
     return papers.filter((paper) => {
-      // Currently only searching by title, but this can be extended in the future
-      // to include other fields like authors, status, etc.
-      return paper.title.toLowerCase().includes(searchQuery.toLowerCase());
+      // Search by title
+      if (paper.title.toLowerCase().includes(query)) {
+        return true;
+      }
+      
+      // Search by authors
+      const authorsText = Array.isArray(paper.authors) 
+        ? paper.authors.join(' ').toLowerCase()
+        : paper.authors.toLowerCase();
+      if (authorsText.includes(query)) {
+        return true;
+      }
+      
+      // Search by arXiv ID/URL
+      if (paper.arxiv_url && paper.arxiv_url.toLowerCase().includes(query)) {
+        return true;
+      }
+      
+      // Extract arXiv ID from URL for more targeted searching
+      // ArXiv URLs typically follow patterns like:
+      // https://arxiv.org/abs/2301.12345
+      // https://arxiv.org/pdf/2301.12345.pdf
+      if (paper.arxiv_url) {
+        const arxivIdMatch = paper.arxiv_url.match(/(?:abs\/|pdf\/)(\d{4}\.\d{4,5})/);
+        if (arxivIdMatch && arxivIdMatch[1].includes(query)) {
+          return true;
+        }
+      }
+      
+      return false;
     });
   }, [papers, searchQuery]);
 

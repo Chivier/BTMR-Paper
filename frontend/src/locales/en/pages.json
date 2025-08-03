@@ -175,7 +175,7 @@
     "title": "Papers",
     "processNewPaper": "Process New Paper",
     "search": {
-      "placeholder": "Search papers by title...",
+      "placeholder": "Search papers by title, authors, or arXiv ID...",
       "label": "Search",
       "clearSearch": "Clear search",
       "noResults": "No papers found matching your search.",
