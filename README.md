@@ -23,31 +23,6 @@ A modern, AI-powered web application for extracting, analyzing, and summarizing 
 BTMR (Beautiful Text Mining Reader) is an intelligent academic paper processing tool that leverages AI to automatically extract, analyze, and summarize research papers from various sources. Perfect for researchers, students, and academic enthusiasts who want to quickly digest complex papers and focus on what matters most.
 
 ### 🎯 Key Benefits
-<<<<<<< Updated upstream
-- **Time Saving**: Automatically extract and summarize papers in minutes
-- **Multi-format Support**: Process ArXiv URLs and PDFs
-- **Beautiful Output**: Generate clean HTML or PDF documents with embedded figures
-
-## 🚀 Features
-
-### 🔧 Backend API
-- **📄 Paper Processing**: Extract content from ArXiv URLs and PDFs
-- **🤖 AI-Powered Summarization**: Generate structured summaries using LLMs
-- **💾 Multiple Output Formats**: HTML and PDF generation
-- **⚡ Real-time Progress**: WebSocket support for live processing updates
-- **📁 File Management**: Upload and manage paper
-- **🔗 RESTful API**: Comprehensive API with OpenAPI documentation
-- **📊 Database Management**: SQLite-based paper metadata storage with migration support
-- **⚙️ Service Management**: Built-in startup script with health monitoring
-- **🖼️ Image Processing**: Advanced image extraction and optimization
-
-### 🎨 Frontend Interface
-- **⚛️ Modern React UI**: Built with React 18, TypeScript, and Tailwind CSS, with fully i18n support
-- **📱 Responsive Design**: Works seamlessly on desktop and mobile devices
-- **🔄 Real-time Updates**: Live progress tracking during paper processing
-- **📚 Paper Management**: Browse, search, and organize processed papers
-- **📤 File Upload**: Drag-and-drop file upload interface
-=======
 
 - **⚡ Time Saving**: Process and summarize papers in minutes, not hours
 - **🔗 Multi-format Support**: ArXiv URLs, PDFs, and web links
@@ -73,18 +48,10 @@ BTMR (Beautiful Text Mining Reader) is an intelligent academic paper processing 
 - 🔄 **Real-time Updates**: Live progress tracking
 - 📚 **Paper Management**: Browse, search, and organize papers
 - 📤 **File Upload**: Intuitive drag-and-drop interface
->>>>>>> Stashed changes
 
 ## 🚀 Quick Start
 
 ### 📋 Prerequisites
-<<<<<<< Updated upstream
-- Python 3.9 or higher
-- Node.js 18 or higher
-- OpenAI API key
-- [uv](https://docs.astral.sh/uv/) for Python package management (recommended)
-=======
->>>>>>> Stashed changes
 
 - **Python**: 3.9 or higher
 - **Node.js**: 18 or higher  
@@ -137,28 +104,6 @@ The simplest way to get BTMR running:
 git clone https://github.com/Chivier/BTMR-Paper.git
 cd BTMR-Paper
 cp .env.example .env
-<<<<<<< Updated upstream
-# Edit .env and add your OpenAI API key
-
-# Start all services with one command
-./startup.sh
-```
-
-The startup script will:
-- Install all dependencies
-- Initialize the SQLite database
-- Migrate existing CSV data if present
-- Start both backend and frontend servers
-- Provide health monitoring and service management
-
-Service management commands:
-```bash
-./startup.sh status    # Check service status
-./startup.sh stop      # Stop all services
-./startup.sh restart   # Restart all services
-./startup.sh help      # Show help
-```
-=======
 # Edit .env with your API key
 ./startup.sh
 ```
@@ -169,7 +114,6 @@ Service management commands:
 - ✅ Migrates existing data if present
 - ✅ Starts both backend and frontend servers
 - ✅ Provides health monitoring and service management
->>>>>>> Stashed changes
 
 ### Option 2: Manual Setup
 
@@ -182,16 +126,8 @@ For development or custom configurations:
 git clone https://github.com/Chivier/BTMR-Paper.git
 cd BTMR-Paper
 
-<<<<<<< Updated upstream
-2. **Install Python dependencies**
-   ```bash
-   # Using uv (recommended)
-   uv sync
-   ```
-=======
 # 2. Install dependencies
 uv sync
->>>>>>> Stashed changes
 
 # 3. Configure environment
 cp .env.example .env
@@ -201,21 +137,10 @@ cp .env.example .env
 uv run python -m src.api.main
 ```
 
-<<<<<<< Updated upstream
-5. **Start the backend server**
-   ```bash
-   # Using uv
-   uv run python -m src.api.main
-   
-   # With custom options
-   uv run python -m src.api.main --host 0.0.0.0 --port 8000 --reload
-   ```
-=======
 **Backend will be available at:**
 - 🌐 Main API: http://localhost:8000
 - 📖 API Documentation: http://localhost:8000/docs
 - 📚 Alternative Docs: http://localhost:8000/redoc
->>>>>>> Stashed changes
 
 #### 🎨 Frontend Setup
 
@@ -242,14 +167,7 @@ cd frontend && npm run build
 uv run python -m src.api.main --host 0.0.0.0 --port 8000
 ```
 
-<<<<<<< Updated upstream
-2. **Start the backend** (it will serve the frontend automatically)
-   ```bash
-   uv run python -m src.api.main --host 0.0.0.0 --port 8000
-   ```
-=======
 **Complete application:** http://localhost:8000
->>>>>>> Stashed changes
 
 ---
 
@@ -266,17 +184,9 @@ cd BTMR-Paper
 cp .env.example .env
 # Edit .env with your API key
 
-<<<<<<< Updated upstream
-2. **Set up environment variables**
-   ```bash
-   cp .env.example .env
-   # Edit .env and add your OpenAI API key
-   ```
-=======
 # Launch with Docker Compose
 docker-compose up --build
 ```
->>>>>>> Stashed changes
 
 **Services will be available at:**
 - 🎨 Frontend: http://localhost:3000
