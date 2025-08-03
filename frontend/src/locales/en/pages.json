@@ -158,5 +158,142 @@
       "failedToLoadModelsNote": "Failed to load models. Please check your API configuration.",
       "networkError": "Network error"
     }
+  },
+  "papers": {
+    "title": "Papers",
+    "processNewPaper": "Process New Paper",
+    "loading": "Loading papers...",
+    "processingPaper": "Processing Paper",
+    "noContent": "No content available",
+    "empty": {
+      "title": "Your processed papers will appear here. Start by processing your first paper!",
+      "button": "Process Your First Paper"
+    },
+    "status": {
+      "completed": "Completed",
+      "failed": "Failed",
+      "pending": "Queued",
+      "fetching": "Fetching",
+      "fetching_arxiv": "Fetching ArXiv",
+      "fetching_content": "Processing Content",
+      "processing_images": "Processing Images",
+      "extracting": "Extracting",
+      "extracting_structure": "Analyzing Structure",
+      "extracting_content": "AI Extraction",
+      "generating": "Generating",
+      "generating_html": "Creating HTML",
+      "generating_pdf": "Creating PDF",
+      "finalizing": "Finalizing"
+    },
+    "actions": {
+      "view": "View",
+      "retry": "Retry",
+      "delete": "Delete",
+      "viewOriginal": "View original paper on ArXiv"
+    },
+    "metadata": {
+      "processed": "Processed {{date}}",
+      "processingTime": "{{time}}s",
+      "retried": "Retried {{count}}x",
+      "failed": "Processing failed:",
+      "failedAt": "Failed on {{date}}",
+      "format": "{{format}} • {{language}}"
+    },
+    "confirmDelete": {
+      "title": "Are you sure you want to delete \"{{title}}\"?",
+      "description": "This will permanently remove:",
+      "items": [
+        "• The paper record from the database",
+        "• All generated files (HTML, PDF, images)",
+        "• All associated metadata"
+      ],
+      "warning": "This action cannot be undone."
+    },
+    "notifications": {
+      "submitted": "Paper submitted successfully! Processing has started.",
+      "completed": "Paper processing completed successfully!",
+      "failed": "Paper processing failed. Please check the error details.",
+      "deleted": "Paper \"{{title}}\" has been deleted successfully.",
+      "deleteFailed": "Failed to delete paper: {{error}}",
+      "retryFailed": "Retry failed: {{error}}",
+      "connectionError": "Connection error during processing",
+      "connectionErrorRetry": "Connection error during retry"
+    },
+    "errors": {
+      "loadFailed": "Failed to load papers: {{error}}",
+      "processingFailed": "Processing failed"
+    }
+  },
+  "paperDetail": {
+    "title": "Paper Details",
+    "backToPapers": "Back to Papers",
+    "loading": "Loading paper...",
+    "loadingContent": "Loading content...",
+    "notFound": "Paper not found",
+    "loadFailed": "Failed to load paper: {{error}}",
+    "contentLoadFailed": "Failed to load paper content",
+    "generatedSummary": "Generated Summary",
+    "downloads": {
+      "html": "HTML",
+      "pdf": "PDF",
+      "json": "JSON",
+      "failed": "Failed to download {{format}}: {{error}}"
+    },
+    "metadata": {
+      "status": "Status:",
+      "processed": "Processed: {{date}}",
+      "processingTime": "Processing Time: {{time}}s",
+      "format": "Format: {{format}} • {{language}}",
+      "authors": "{{authors}}",
+      "retryInfo": "This paper has been retried {{count}} time{{plural}}.",
+      "lastFailure": "Last failure: {{date}}",
+      "progress": "Progress",
+      "errorDetails": "Error Details",
+      "retryInformation": "Retry Information",
+      "processingTimeline": "Processing Timeline"
+    },
+    "status": {
+      "titles": {
+        "completed": "Processing Completed",
+        "failed": "Processing Failed",
+        "pending": "Processing Queued",
+        "fetching": "Fetching Paper Content",
+        "fetching_arxiv": "Fetching from ArXiv",
+        "fetching_content": "Processing Content",
+        "processing_images": "Processing Images",
+        "extracting": "Extracting Information",
+        "extracting_structure": "Analyzing Structure",
+        "extracting_content": "AI Content Extraction",
+        "generating": "Generating Output",
+        "generating_html": "Creating HTML Summary",
+        "generating_pdf": "Creating PDF Version",
+        "finalizing": "Finalizing Processing",
+        "default": "Processing..."
+      },
+      "descriptions": {
+        "completed": "Your paper has been successfully processed and is ready for viewing.",
+        "failed": "An error occurred during processing. Please check the error details below.",
+        "pending": "Your paper is in the processing queue and will begin shortly.",
+        "fetching": "Downloading and preparing the paper content for processing.",
+        "fetching_arxiv": "Downloading the paper from ArXiv servers.",
+        "fetching_content": "Processing and parsing the paper content.",
+        "processing_images": "Downloading and processing embedded images and figures.",
+        "extracting": "Using AI to extract and structure information from the paper.",
+        "extracting_structure": "Analyzing the paper structure and identifying key sections.",
+        "extracting_content": "Extracting detailed content using advanced AI models.",
+        "generating": "Creating the final formatted output files.",
+        "generating_html": "Generating the HTML summary with formatted content.",
+        "generating_pdf": "Creating the PDF version of the summary.",
+        "finalizing": "Saving metadata and finalizing the processing pipeline.",
+        "default": "Processing is in progress..."
+      }
+    },
+    "processingSteps": {
+      "queued": "Queued for Processing",
+      "fetching": "Fetching Paper Content",
+      "extracting": "Extracting Information",
+      "generating": "Generating Output",
+      "completed": "Completed"
+    }
   }
 }

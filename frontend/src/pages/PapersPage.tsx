@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { FileText, Loader2, AlertCircle, Eye, RotateCcw, Clock, Trash2 } from 'lucide-react';
 import { 
   listPapers, 
@@ -15,6 +16,7 @@ import {
 import { useNotification } from '@/context/NotificationContext';
 
 export const PapersPage: React.FC = () => {
+  const { t } = useTranslation('pages');
   const navigate = useNavigate();
   const location = useLocation();
   const { showNotification } = useNotification();
@@ -34,7 +36,7 @@ export const PapersPage: React.FC = () => {
     const state = location.state as { newPaperId?: string; showProcessing?: boolean };
     if (state?.newPaperId && state?.showProcessing) {
       // Show success notification
-      showNotification('Paper submitted successfully! Processing has started.', 'success');
+      showNotification(t('papers.notifications.submitted'), 'success');
       
       // Start tracking the new paper's progress
       startProgressTracking(state.newPaperId);
@@ -61,7 +63,7 @@ export const PapersPage: React.FC = () => {
       setPapers(response.papers);
     } catch (err) {
       const errorMessage = handleApiError(err);
-      setError(`Failed to load papers: ${errorMessage}`);
+      setError(t('papers.errors.loadFailed', { error: errorMessage }));
       console.error('Error loading papers:', err);
     } finally {
       setIsLoading(false);
@@ -86,10 +88,10 @@ export const PapersPage: React.FC = () => {
         // If processing completed or failed, clean up
         if (progress.status === 'completed' || progress.status === 'failed') {
           if (progress.status === 'completed') {
-            showNotification('Paper processing completed successfully!', 'success');
+            showNotification(t('papers.notifications.completed'), 'success');
           } else if (progress.status === 'failed') {
-            setError(progress.error || 'Processing failed');
-            showNotification('Paper processing failed. Please check the error details.', 'error');
+            setError(progress.error || t('papers.errors.processingFailed'));
+            showNotification(t('papers.notifications.failed'), 'error');
           }
           setProcessingProgress(null);
           if (activeWebSocket) {
@@ -100,7 +102,7 @@ export const PapersPage: React.FC = () => {
       },
       (error) => {
         console.error('WebSocket error:', error);
-        setError('Connection error during processing');
+        setError(t('papers.notifications.connectionError'));
       },
       () => {
         console.log('WebSocket connection closed');
@@ -136,38 +138,7 @@ export const PapersPage: React.FC = () => {
   };
 
   const getStatusDisplayName = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'Completed';
-      case 'failed':
-        return 'Failed';
-      case 'pending':
-        return 'Queued';
-      case 'fetching':
-        return 'Fetching';
-      case 'fetching_arxiv':
-        return 'Fetching ArXiv';
-      case 'fetching_content':
-        return 'Processing Content';
-      case 'processing_images':
-        return 'Processing Images';
-      case 'extracting':
-        return 'Extracting';
-      case 'extracting_structure':
-        return 'Analyzing Structure';
-      case 'extracting_content':
-        return 'AI Extraction';
-      case 'generating':
-        return 'Generating';
-      case 'generating_html':
-        return 'Creating HTML';
-      case 'generating_pdf':
-        return 'Creating PDF';
-      case 'finalizing':
-        return 'Finalizing';
-      default:
-        return status;
-    }
+    return t(`papers.status.${status}`, { defaultValue: status });
   };
 
   const handleViewPaper = (paperId: string) => {
@@ -191,7 +162,7 @@ export const PapersPage: React.FC = () => {
           
           if (progress.status === 'completed' || progress.status === 'failed') {
             if (progress.status === 'failed') {
-              setError(progress.error || 'Retry failed');
+              setError(progress.error || t('papers.errors.processingFailed'));
             }
             setProcessingProgress(null);
             if (activeWebSocket) {
@@ -202,7 +173,7 @@ export const PapersPage: React.FC = () => {
         },
         (error) => {
           console.error('WebSocket error during retry:', error);
-          setError('Connection error during retry');
+          setError(t('papers.notifications.connectionErrorRetry'));
         }
       );
       
@@ -210,7 +181,7 @@ export const PapersPage: React.FC = () => {
       
     } catch (err) {
       const errorMessage = handleApiError(err);
-      setError(`Retry failed: ${errorMessage}`);
+      setError(t('papers.notifications.retryFailed', { error: errorMessage }));
       console.error('Error retrying paper:', err);
     }
   };
@@ -218,12 +189,12 @@ export const PapersPage: React.FC = () => {
   const handleDeletePaper = async (paperId: string, paperTitle: string) => {
     // Show confirmation dialog
     const confirmDelete = window.confirm(
-      `Are you sure you want to delete "${paperTitle}"?\n\n` +
-      'This will permanently remove:\n' +
-      '• The paper record from the database\n' +
-      '• All generated files (HTML, PDF, images)\n' +
-      '• All associated metadata\n\n' +
-      'This action cannot be undone.'
+      t('papers.deleteConfirm.message', { title: paperTitle }) + '\n\n' +
+      t('papers.deleteConfirm.warning') + '\n' +
+      t('papers.deleteConfirm.items.database') + '\n' +
+      t('papers.deleteConfirm.items.files') + '\n' +
+      t('papers.deleteConfirm.items.metadata') + '\n\n' +
+      t('papers.deleteConfirm.undoWarning')
     );
 
     if (!confirmDelete) {
@@ -235,15 +206,15 @@ export const PapersPage: React.FC = () => {
       await deletePaper(paperId);
       
       // Show success notification
-      showNotification(`Paper "${paperTitle}" has been deleted successfully.`, 'success');
+      showNotification(t('papers.notifications.deleteSuccess', { title: paperTitle }), 'success');
       
       // Reload papers to reflect the deletion
       loadPapers();
       
     } catch (err) {
       const errorMessage = handleApiError(err);
-      setError(`Failed to delete paper: ${errorMessage}`);
-      showNotification(`Failed to delete paper: ${errorMessage}`, 'error');
+      setError(t('papers.errors.deleteFailed', { error: errorMessage }));
+      showNotification(t('papers.notifications.deleteFailed', { error: errorMessage }), 'error');
       console.error('Error deleting paper:', err);
     }
   };
@@ -251,12 +222,12 @@ export const PapersPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Papers</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('papers.title')}</h1>
         <button 
           className="btn-primary btn-md"
           onClick={() => navigate('/process')}
         >
-          Process New Paper
+          {t('papers.processNewPaper')}
         </button>
       </div>
 
@@ -278,7 +249,7 @@ export const PapersPage: React.FC = () => {
           <div className="card-content py-2">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="font-medium text-gray-900">Processing Paper</h3>
+                <h3 className="font-medium text-gray-900">{t('papers.processingPaper')}</h3>
                 <span className={getStatusBadgeClass(processingProgress.status)}>
                   {processingProgress.status}
                 </span>
@@ -308,7 +279,7 @@ export const PapersPage: React.FC = () => {
             <div className="card-content py-2">
               <div className="flex items-center justify-center space-x-2 text-gray-600">
                 <Loader2 className="w-5 h-5 animate-spin" />
-                <p>Loading papers...</p>
+                <p>{t('papers.loading')}</p>
               </div>
             </div>
           </div>
@@ -342,7 +313,7 @@ export const PapersPage: React.FC = () => {
                       )}
                       <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
                         <span>
-                          Processed {new Date(paper.created_at).toLocaleDateString()}
+                          {t('papers.processed')} {new Date(paper.created_at).toLocaleDateString()}
                         </span>
                         <span>
                           {paper.processing_time}s
@@ -353,7 +324,7 @@ export const PapersPage: React.FC = () => {
                         {paper.retry_count > 0 && (
                           <span className="flex items-center text-orange-600">
                             <RotateCcw className="w-3 h-3 mr-1" />
-                            Retried {paper.retry_count}x
+                            {t('papers.retried', { count: paper.retry_count })}
                           </span>
                         )}
                       </div>
@@ -364,13 +335,13 @@ export const PapersPage: React.FC = () => {
                           <div className="flex items-start space-x-2">
                             <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
                             <div className="flex-1">
-                              <p className="text-sm text-red-800 font-medium">Processing failed:</p>
+                              <p className="text-sm text-red-800 font-medium">{t('papers.processingFailed')}:</p>
                               <p className="text-sm text-red-700 mt-1">{paper.error_message}</p>
                               {paper.last_failed_at && (
                                 <div className="flex items-center space-x-1 mt-2 text-xs text-red-600">
                                   <Clock className="w-3 h-3" />
                                   <span>
-                                    Failed on {new Date(paper.last_failed_at).toLocaleString()}
+                                    {t('papers.failedOn')} {new Date(paper.last_failed_at).toLocaleString()}
                                   </span>
                                 </div>
                               )}
@@ -391,7 +362,7 @@ export const PapersPage: React.FC = () => {
                         title="View Output"
                       >
                         <Eye className="w-4 h-4 mr-1" />
-                        View
+                        {t('papers.actions.view')}
                       </button>
                     )}
                     {paper.status === 'failed' && (
@@ -404,7 +375,7 @@ export const PapersPage: React.FC = () => {
                         title="Retry processing this paper"
                       >
                         <RotateCcw className="w-4 h-4 mr-1" />
-                        Retry
+                        {t('papers.actions.retry')}
                       </button>
                     )}
                     <button
@@ -416,7 +387,7 @@ export const PapersPage: React.FC = () => {
                       title="Delete this paper permanently"
                     >
                       <Trash2 className="w-4 h-4 mr-1" />
-                      Delete
+                      {t('papers.actions.delete')}
                     </button>
                     <span className={getStatusBadgeClass(paper.status)}>
                       {getStatusDisplayName(paper.status)}
@@ -431,13 +402,13 @@ export const PapersPage: React.FC = () => {
             <div className="card-content py-2">
               <div className="text-center space-y-4">
                 <p className="text-gray-600">
-                  Your processed papers will appear here. Start by processing your first paper!
+                  {t('papers.emptyState')}
                 </p>
                 <button 
                   className="btn-primary btn-md"
                   onClick={() => navigate('/process')}
                 >
-                  Process Your First Paper
+                  {t('papers.processFirstPaper')}
                 </button>
               </div>
             </div>

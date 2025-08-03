@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Download, Eye, FileText, AlertCircle, Loader2 } from 'lucide-react';
 import { getPaper, downloadPaper, handleApiError, listPapers } from '@/services/api';
 import { PaperMetadata } from '@/types';
 
 export const PaperDetailPage: React.FC = () => {
+  const { t } = useTranslation('pages');
   const { paperId } = useParams<{ paperId: string }>();
   const navigate = useNavigate();
   const [paper, setPaper] = useState<any>(null);
@@ -31,7 +33,7 @@ export const PaperDetailPage: React.FC = () => {
       const paperMetadata = papersResponse.papers.find((p: PaperMetadata) => p.paper_id === paperId);
       
       if (!paperMetadata) {
-        setError('Paper not found');
+        setError(t('paperDetail.notFound'));
         return;
       }
       
@@ -52,7 +54,7 @@ export const PaperDetailPage: React.FC = () => {
       }
     } catch (err) {
       const errorMessage = handleApiError(err);
-      setError(`Failed to load paper: ${errorMessage}`);
+      setError(t('paperDetail.loadFailed', { error: errorMessage }));
       console.error('Error loading paper:', err);
     } finally {
       setIsLoading(false);
@@ -69,7 +71,7 @@ export const PaperDetailPage: React.FC = () => {
       setHtmlContent(text);
     } catch (err) {
       console.error('Error loading HTML content:', err);
-      setError('Failed to load paper content');
+      setError(t('paperDetail.contentLoadFailed'));
     } finally {
       setIsLoadingHtml(false);
     }
@@ -90,7 +92,7 @@ export const PaperDetailPage: React.FC = () => {
       window.URL.revokeObjectURL(url);
     } catch (err) {
       const errorMessage = handleApiError(err);
-      setError(`Failed to download ${format.toUpperCase()}: ${errorMessage}`);
+      setError(t('paperDetail.downloads.failed', { format: format.toUpperCase(), error: errorMessage }));
     }
   };
 
@@ -103,7 +105,7 @@ export const PaperDetailPage: React.FC = () => {
             className="btn btn-outline btn-sm"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Papers
+            {t('paperDetail.backToPapers')}
           </button>
         </div>
         
@@ -111,7 +113,7 @@ export const PaperDetailPage: React.FC = () => {
           <div className="card-content py-2">
             <div className="flex items-center justify-center space-x-2 text-gray-600 py-8">
               <Loader2 className="w-6 h-6 animate-spin" />
-              <p>Loading paper...</p>
+              <p>{t('paperDetail.loading')}</p>
             </div>
           </div>
         </div>
@@ -128,7 +130,7 @@ export const PaperDetailPage: React.FC = () => {
             className="btn btn-outline btn-sm"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Papers
+            {t('paperDetail.backToPapers')}
           </button>
         </div>
         
@@ -158,7 +160,7 @@ export const PaperDetailPage: React.FC = () => {
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Papers
           </button>
-          <h1 className="text-2xl font-bold text-gray-900">Paper Details</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('paperDetail.title')}</h1>
         </div>
         
         {metadata.status === 'completed' && (
@@ -168,21 +170,21 @@ export const PaperDetailPage: React.FC = () => {
               className="btn btn-outline btn-sm"
             >
               <Download className="w-4 h-4 mr-2" />
-              HTML
+              {t('paperDetail.downloads.html')}
             </button>
             <button
               onClick={() => handleDownload('pdf')}
               className="btn btn-outline btn-sm"
             >
               <Download className="w-4 h-4 mr-2" />
-              PDF
+              {t('paperDetail.downloads.pdf')}
             </button>
             <button
               onClick={() => handleDownload('json')}
               className="btn btn-outline btn-sm"
             >
               <Download className="w-4 h-4 mr-2" />
-              JSON
+              {t('paperDetail.downloads.json')}
             </button>
           </div>
         )}
@@ -209,13 +211,13 @@ export const PaperDetailPage: React.FC = () => {
               )}
               <div className="flex items-center space-x-6 text-sm text-gray-500">
                 <span>
-                  Status: <span className={`badge ${getStatusBadgeClass(metadata.status)} ml-1`}>
+                  {t('paperDetail.metadata.status')}<span className={`badge ${getStatusBadgeClass(metadata.status)} ml-1`}>
                     {metadata.status}
                   </span>
                 </span>
-                <span>Processed: {new Date(metadata.created_at).toLocaleDateString()}</span>
-                <span>Processing Time: {metadata.processing_time}s</span>
-                <span>Format: {metadata.output_format} • {metadata.language}</span>
+                <span>{t('paperDetail.metadata.processed', { date: new Date(metadata.created_at).toLocaleDateString() })}</span>
+                <span>{t('paperDetail.metadata.processingTime', { time: metadata.processing_time })}</span>
+                <span>{t('paperDetail.metadata.format', { format: metadata.output_format, language: metadata.language })}</span>
               </div>
             </div>
           </div>
