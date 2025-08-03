@@ -96,6 +96,10 @@ export const PaperDetailPage: React.FC = () => {
     }
   };
 
+  const getLanguageDisplayName = (languageCode: string) => {
+    return t(`languages.${languageCode}`, { defaultValue: languageCode });
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -217,7 +221,7 @@ export const PaperDetailPage: React.FC = () => {
                 </span>
                 <span>{t('paperDetail.metadata.processed', { date: new Date(metadata.created_at).toLocaleDateString() })}</span>
                 <span>{t('paperDetail.metadata.processingTime', { time: metadata.processing_time })}</span>
-                <span>{t('paperDetail.metadata.format', { format: metadata.output_format, language: metadata.language })}</span>
+                <span>{t('paperDetail.metadata.format', { language: getLanguageDisplayName(metadata.language) })}</span>
               </div>
             </div>
           </div>

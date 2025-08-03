@@ -9,7 +9,7 @@
     },
     "viewPapers": {
       "title": "View Papers",
-      "description": "Browse and manage your processed papers with search and filtering capabilities.",
+      "description": "Browse and manage your processed papers.",
       "button": "Browse Papers"
     }
   },
@@ -21,7 +21,7 @@
       "description": "Choose how you want to provide the paper for processing"
     },
     "urlInput": {
-      "label": "Paper URL (ArXiv, DOI, or direct link)",
+      "label": "Paper URL (ArXiv)",
       "placeholder": "https://arxiv.org/abs/2301.12345"
     },
     "fileInput": {
@@ -167,6 +167,10 @@
       "networkError": "Network error"
     }
   },
+  "languages": {
+    "en": "English",
+    "zh": "Chinese"
+  },
   "papers": {
     "title": "Papers",
     "processNewPaper": "Process New Paper",
@@ -205,7 +209,7 @@
       "retried": "Retried {{count}}x",
       "failed": "Processing failed:",
       "failedAt": "Failed on {{date}}",
-      "format": "{{format}} • {{language}}"
+      "format": "{{language}}"
     },
     "confirmDelete": {
       "title": "Are you sure you want to delete \"{{title}}\"?",
@@ -251,7 +255,7 @@
       "status": "Status:",
       "processed": "Processed: {{date}}",
       "processingTime": "Processing Time: {{time}}s",
-      "format": "Format: {{format}} • {{language}}",
+      "format": "Language: {{language}}",
       "authors": "{{authors}}",
       "retryInfo": "This paper has been retried {{count}} time{{plural}}.",
       "lastFailure": "Last failure: {{date}}",

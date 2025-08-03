@@ -1,7 +1,7 @@
 {
   "home": {
     "title": "欢迎使用 BTMR",
-    "subtitle": "美观文本挖掘阅读器 - 使用AI提取和总结学术论文",
+    "subtitle": "超强论文阅读器 - 让AI加速你的文献阅读",
     "processPapers": {
       "title": "处理论文",
       "description": "上传或提供学术论文的网址，使用AI进行提取和摘要。",
@@ -9,7 +9,7 @@
     },
     "viewPapers": {
       "title": "查看论文",
-      "description": "浏览和管理已处理的论文，支持搜索和筛选功能。",
+      "description": "浏览和管理已处理的论文。",
       "button": "浏览论文"
     }
   },
@@ -21,7 +21,7 @@
       "description": "选择如何提供要处理的论文"
     },
     "urlInput": {
-      "label": "论文网址（ArXiv、DOI或直接链接）",
+      "label": "论文网址（ArXiv）",
       "placeholder": "https://arxiv.org/abs/2301.12345"
     },
     "fileInput": {
@@ -61,12 +61,12 @@
     "api": {
       "title": "API配置",
       "openaiApiKey": {
-        "label": "OpenAI API密钥",
+        "label": "API密钥",
         "placeholder": "sk-...",
-        "description": "您的OpenAI API密钥，用于访问GPT模型"
+        "description": "您的API密钥"
       },
       "apiBaseUrl": {
-        "label": "API基础网址",
+        "label": "API端点",
         "placeholder": "https://api.openai.com/v1",
         "description": "自定义API端点（OpenAI请保持默认）"
       },
@@ -167,6 +167,10 @@
       "networkError": "网络错误"
     }
   },
+  "languages": {
+    "en": "英语",
+    "zh": "中文"
+  },
   "papers": {
     "title": "论文",
     "processNewPaper": "处理新论文",
@@ -205,7 +209,7 @@
       "retried": "重试 {{count}} 次",
       "failed": "处理失败：",
       "failedAt": "失败于 {{date}}",
-      "format": "{{format}} • {{language}}"
+      "format": "{{language}}"
     },
     "confirmDelete": {
       "title": "确定要删除\"{{title}}\"吗？",
@@ -251,7 +255,7 @@
       "status": "状态：",
       "processed": "处理时间：{{date}}",
       "processingTime": "处理用时：{{time}}秒",
-      "format": "格式：{{format}} • {{language}}",
+      "format": "语言：{{language}}",
       "authors": "{{authors}}",
       "retryInfo": "此论文已重试 {{count}} 次{{plural}}。",
       "lastFailure": "最后一次失败：{{date}}",

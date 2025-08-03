@@ -141,6 +141,10 @@ export const PapersPage: React.FC = () => {
     return t(`papers.status.${status}`, { defaultValue: status });
   };
 
+  const getLanguageDisplayName = (languageCode: string) => {
+    return t(`languages.${languageCode}`, { defaultValue: languageCode });
+  };
+
   const handleViewPaper = (paperId: string) => {
     navigate(`/papers/${paperId}`);
   };
@@ -313,13 +317,13 @@ export const PapersPage: React.FC = () => {
                       )}
                       <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
                         <span>
-                          {t('papers.processed')} {new Date(paper.created_at).toLocaleDateString()}
+                          {new Date(paper.created_at).toLocaleDateString()}
                         </span>
                         <span>
                           {paper.processing_time}s
                         </span>
                         <span>
-                          {paper.output_format} • {paper.language}
+                          {getLanguageDisplayName(paper.language)}
                         </span>
                         {paper.retry_count > 0 && (
                           <span className="flex items-center text-orange-600">
