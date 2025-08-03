@@ -174,13 +174,19 @@
   "papers": {
     "title": "论文",
     "processNewPaper": "处理新论文",
+    "search": {
+      "placeholder": "按标题搜索论文...",
+      "label": "搜索",
+      "clearSearch": "清除搜索",
+      "noResults": "未找到匹配的论文。",
+      "resultCount": "找到 {{count}} 篇论文",
+      "resultCount_plural": "找到 {{count}} 篇论文"
+    },
     "loading": "正在加载论文...",
     "processingPaper": "正在处理论文",
     "noContent": "无可用内容",
-    "empty": {
-      "title": "您处理的论文将出现在此处。开始处理您的第一篇论文吧！",
-      "button": "处理您的第一篇论文"
-    },
+    "emptyState": "您处理的论文将出现在此处。开始处理您的第一篇论文吧！",
+    "processFirstPaper": "处理您的第一篇论文",
     "status": {
       "completed": "已完成",
       "failed": "失败",

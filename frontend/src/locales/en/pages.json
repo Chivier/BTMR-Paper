@@ -174,13 +174,19 @@
   "papers": {
     "title": "Papers",
     "processNewPaper": "Process New Paper",
+    "search": {
+      "placeholder": "Search papers by title...",
+      "label": "Search",
+      "clearSearch": "Clear search",
+      "noResults": "No papers found matching your search.",
+      "resultCount": "{{count}} paper found",
+      "resultCount_plural": "{{count}} papers found"
+    },
     "loading": "Loading papers...",
     "processingPaper": "Processing Paper",
     "noContent": "No content available",
-    "empty": {
-      "title": "Your processed papers will appear here. Start by processing your first paper!",
-      "button": "Process Your First Paper"
-    },
+    "emptyState": "Your processed papers will appear here. Start by processing your first paper!",
+    "processFirstPaper": "Process Your First Paper",
     "status": {
       "completed": "Completed",
       "failed": "Failed",

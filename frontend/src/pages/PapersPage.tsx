@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { FileText, Loader2, AlertCircle, Eye, RotateCcw, Clock, Trash2 } from 'lucide-react';
+import { FileText, Loader2, AlertCircle, Eye, RotateCcw, Clock, Trash2, Search, X } from 'lucide-react';
 import { 
   listPapers, 
   createProgressWebSocket, 
@@ -25,6 +25,20 @@ export const PapersPage: React.FC = () => {
   const [papers, setPapers] = useState<PaperMetadata[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [activeWebSocket, setActiveWebSocket] = useState<WebSocket | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+
+  // Filtered papers based on search query
+  const filteredPapers = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return papers;
+    }
+    
+    return papers.filter((paper) => {
+      // Currently only searching by title, but this can be extended in the future
+      // to include other fields like authors, status, etc.
+      return paper.title.toLowerCase().includes(searchQuery.toLowerCase());
+    });
+  }, [papers, searchQuery]);
 
   // Load existing papers on component mount
   useEffect(() => {
@@ -223,9 +237,13 @@ export const PapersPage: React.FC = () => {
     }
   };
 
+  const handleClearSearch = () => {
+    setSearchQuery('');
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col space-y-4 sm:flex-row sm:justify-between sm:items-center sm:space-y-0">
         <h1 className="text-2xl font-bold text-gray-900">{t('papers.title')}</h1>
         <button 
           className="btn-primary btn-md"
@@ -233,6 +251,49 @@ export const PapersPage: React.FC = () => {
         >
           {t('papers.processNewPaper')}
         </button>
+      </div>
+
+      {/* Search Section */}
+      <div className="card">
+        <div className="card-content py-2">
+          <div className="flex items-center space-x-4">
+            <div className="flex-1">
+              <label htmlFor="search" className="sr-only">
+                {t('papers.search.label')}
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  id="search"
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="input input-bordered w-full pl-10 pr-10"
+                  placeholder={t('papers.search.placeholder')}
+                />
+                {searchQuery && (
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                    <button
+                      type="button"
+                      onClick={handleClearSearch}
+                      className="text-gray-400 hover:text-gray-600 transition-colors"
+                      title={t('papers.search.clearSearch')}
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+            {searchQuery && (
+              <div className="text-sm text-gray-600">
+                {t('papers.search.resultCount', { count: filteredPapers.length })}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Error Display */}
@@ -288,7 +349,8 @@ export const PapersPage: React.FC = () => {
             </div>
           </div>
         ) : papers.length > 0 ? (
-          papers.map((paper) => (
+          filteredPapers.length > 0 ? (
+            filteredPapers.map((paper) => (
             <div key={paper.paper_id} className="card hover:shadow-md transition-shadow duration-200">
               <div className="card-content py-2">
                 <div className="flex items-start justify-between">
@@ -401,6 +463,24 @@ export const PapersPage: React.FC = () => {
               </div>
             </div>
           ))
+          ) : (
+            // No search results
+            <div className="card">
+              <div className="card-content py-2">
+                <div className="text-center space-y-4">
+                  <p className="text-gray-600">
+                    {t('papers.search.noResults')}
+                  </p>
+                  <button 
+                    className="btn btn-outline btn-sm"
+                    onClick={handleClearSearch}
+                  >
+                    {t('papers.search.clearSearch')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )
         ) : (
           <div className="card">
             <div className="card-content py-2">
