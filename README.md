@@ -8,10 +8,8 @@ BTMR (Beautiful Text Mining Reader) is an intelligent academic paper processing 
 
 ### 🎯 Key Benefits
 - **Time Saving**: Automatically extract and summarize papers in minutes
-- **Multi-format Support**: Process ArXiv papers, PDFs, web URLs, and Markdown files
+- **Multi-format Support**: Process ArXiv papers, PDFs
 - **Beautiful Output**: Generate clean HTML or PDF documents with embedded figures
-- **Real-time Processing**: Track progress as papers are being analyzed
-- **Easy Deployment**: Simple setup with one-command startup script
 
 ## 🚀 Features
 
@@ -20,7 +18,7 @@ BTMR (Beautiful Text Mining Reader) is an intelligent academic paper processing 
 - **🤖 AI-Powered Summarization**: Generate structured summaries using OpenAI GPT models
 - **💾 Multiple Output Formats**: HTML and PDF generation
 - **⚡ Real-time Progress**: WebSocket support for live processing updates
-- **📁 File Management**: Upload and manage paper files
+- **📁 File Management**: Upload and manage paper
 - **🔗 RESTful API**: Comprehensive API with OpenAPI documentation
 - **📊 Database Management**: SQLite-based paper metadata storage with migration support
 - **⚙️ Service Management**: Built-in startup script with health monitoring
@@ -32,7 +30,6 @@ BTMR (Beautiful Text Mining Reader) is an intelligent academic paper processing 
 - **📱 Responsive Design**: Works seamlessly on desktop and mobile devices
 - **🔄 Real-time Updates**: Live progress tracking during paper processing
 - **📚 Paper Management**: Browse, search, and organize processed papers
-- **📈 Statistics Dashboard**: View processing insights and analytics
 - **📤 File Upload**: Drag-and-drop file upload interface
 
 ## Quick Start
@@ -41,7 +38,7 @@ BTMR (Beautiful Text Mining Reader) is an intelligent academic paper processing 
 - Python 3.9 or higher
 - Node.js 18 or higher
 - OpenAI API key
-- [uv](https://docs.astral.sh/uv/) for Python package management (recommended)
+- [uv](https://docs.astral.sh/uv/) for Python package management
 
 ### 🛠️ Option 1: One-Command Startup (Recommended)
 
@@ -91,9 +88,6 @@ For development or custom configurations:
    ```bash
    # Using uv (recommended)
    uv sync
-   
-   # Or using pip
-   pip install -r requirements.txt
    ```
 
 3. **Set up environment variables**
@@ -119,11 +113,8 @@ For development or custom configurations:
    # Using uv
    uv run python -m src.api.main
    
-   # Or directly
-   python -m src.api.main
-   
    # With custom options
-   python -m src.api.main --host 0.0.0.0 --port 8000 --reload
+   uv run python -m src.api.main --host 0.0.0.0 --port 8000 --reload
    ```
 
    The API will be available at:
@@ -160,7 +151,7 @@ For development or custom configurations:
 
 2. **Start the backend** (it will serve the frontend automatically)
    ```bash
-   python -m src.api.main --host 0.0.0.0 --port 8000
+   uv run python -m src.api.main --host 0.0.0.0 --port 8000
    ```
 
    The complete application will be available at: http://localhost:8000
@@ -177,7 +168,7 @@ BTMR can be easily deployed using Docker with separate containers for frontend a
    cd BTMR-Paper
    ```
 
-2. **Set up environment variables**
+2. **Set up environment variables** (You can also set it on web page)
    ```bash
    cp .env.example .env
    # Edit .env and add your OpenAI API key
