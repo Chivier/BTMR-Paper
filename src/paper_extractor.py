@@ -112,6 +112,7 @@ class OpenAIExtractor(LLMExtractor):
             return json.loads(response_content)
         except json.JSONDecodeError as e:
             print(f"Direct JSON parsing failed: {e}")
+            print(f"Raw response content: {response_content[:500]}...")  # Preview first 500 chars
         
         # Strategy 2: Extract JSON from code blocks (```json ... ```)
         try:
@@ -126,7 +127,7 @@ class OpenAIExtractor(LLMExtractor):
                         continue
         except Exception as e:
             print(f"Code block extraction failed: {e}")
-        
+    
         # Strategy 3: Find JSON objects using bracket matching
         try:
             print("Attempting bracket-based JSON extraction...")
@@ -236,7 +237,7 @@ class OpenAIExtractor(LLMExtractor):
     def extract(self, paper_content: str, language: str = "en", format_type: str = "text", image_mapping: Dict[str, dict] = None) -> Dict[str, Any]:
         prompt = f"""Please extract the following information from this academic paper. Be comprehensive and detailed.
 
-1. **Paper Title**: The main title of the paper.
+1. **Paper Title**: The main title of the paper. (Do not translate it, keep it in its original language.)
 2. **Authors**: List of authors as an array of strings, one per author.
 3. **Abstract**: Extract a CONCISE summary of the paper (100-150 words). Focus on the core problem, approach, and key results. Use **bold** markdown to highlight important metrics and achievements. When appropriate, reference key figures showing results (e.g., "achieving **10× speedup** (see Figure 9)").
 4. **Background**: Extract main background topics with:
@@ -548,14 +549,15 @@ IMPORTANT FOR IMAGE EXTRACTION AND CLASSIFICATION:
         translate_prompt = f"""Please translate the following academic paper content from English to Chinese. 
 IMPORTANT REQUIREMENTS:
 1. Maintain the JSON structure and formatting (including **bold** markdown)
-2. For technical terms, keep the English term followed by Chinese translation in parentheses
-3. For the METHOD section specifically:
+2. For titles, keep them in their original language
+3. For technical terms, keep the English term followed by Chinese translation in parentheses
+4. For the METHOD section specifically:
    - Keep the detailed, beginner-friendly explanations
    - Maintain all step-by-step walkthroughs and examples
    - Preserve the educational tone that explains WHY, WHAT, and HOW
    - Keep analogies and intuitive explanations
    - Ensure technical term definitions remain clear
-4. Make the Chinese translation equally accessible to LLM field beginners
+5. Make the translation equally accessible to LLM field beginners
 
 Content to translate (in JSON format):
 {json.dumps(content_to_translate, ensure_ascii=False, indent=2)}

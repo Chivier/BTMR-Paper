@@ -1,7 +1,7 @@
 {
   "home": {
     "title": "欢迎使用 BTMR",
-    "subtitle": "美观文本挖掘阅读器 - 使用AI提取和总结学术论文",
+    "subtitle": "超强论文阅读器 - 让AI加速你的文献阅读",
     "processPapers": {
       "title": "处理论文",
       "description": "上传或提供学术论文的网址，使用AI进行提取和摘要。",
@@ -9,7 +9,7 @@
     },
     "viewPapers": {
       "title": "查看论文",
-      "description": "浏览和管理已处理的论文，支持搜索和筛选功能。",
+      "description": "浏览和管理已处理的论文。",
       "button": "浏览论文"
     }
   },
@@ -21,12 +21,20 @@
       "description": "选择如何提供要处理的论文"
     },
     "urlInput": {
-      "label": "论文网址（ArXiv、DOI或直接链接）",
+      "label": "论文网址（ArXiv）",
       "placeholder": "https://arxiv.org/abs/2301.12345"
     },
     "fileInput": {
       "label": "上传PDF文件",
       "placeholder": "点击上传或将PDF文件拖拽到此处"
+    },
+    "languageSection": {
+      "title": "输出语言",
+      "description": "选择生成报告的语言"
+    },
+    "languageOptions": {
+      "en": "英语",
+      "zh": "中文"
     },
     "uploadProgress": "正在上传文件...",
     "processingProgress": "正在处理论文",
@@ -53,12 +61,12 @@
     "api": {
       "title": "API配置",
       "openaiApiKey": {
-        "label": "OpenAI API密钥",
+        "label": "API密钥",
         "placeholder": "sk-...",
-        "description": "您的OpenAI API密钥，用于访问GPT模型"
+        "description": "您的API密钥"
       },
       "apiBaseUrl": {
-        "label": "API基础网址",
+        "label": "API端点",
         "placeholder": "https://api.openai.com/v1",
         "description": "自定义API端点（OpenAI请保持默认）"
       },
@@ -157,6 +165,153 @@
       "failedToTestModel": "测试模型失败：{{error}}",
       "failedToLoadModelsNote": "加载模型失败。请检查您的API配置。",
       "networkError": "网络错误"
+    }
+  },
+  "languages": {
+    "en": "英语",
+    "zh": "中文"
+  },
+  "papers": {
+    "title": "论文",
+    "processNewPaper": "处理新论文",
+    "search": {
+      "placeholder": "按标题、作者或arXiv ID搜索论文...",
+      "label": "搜索",
+      "clearSearch": "清除搜索",
+      "noResults": "未找到匹配的论文。",
+      "resultCount": "找到 {{count}} 篇论文",
+      "resultCount_plural": "找到 {{count}} 篇论文"
+    },
+    "loading": "正在加载论文...",
+    "processingPaper": "正在处理论文",
+    "noContent": "无可用内容",
+    "emptyState": "您处理的论文将出现在此处。开始处理您的第一篇论文吧！",
+    "processFirstPaper": "处理您的第一篇论文",
+    "status": {
+      "completed": "已完成",
+      "failed": "失败",
+      "pending": "排队中",
+      "fetching": "获取中",
+      "fetching_arxiv": "获取ArXiv",
+      "fetching_content": "处理内容",
+      "processing_images": "处理图像",
+      "extracting": "提取中",
+      "extracting_structure": "分析结构",
+      "extracting_content": "AI提取",
+      "generating": "生成中",
+      "generating_html": "创建HTML",
+      "generating_pdf": "创建PDF",
+      "finalizing": "完成中"
+    },
+    "actions": {
+      "view": "查看",
+      "retry": "重试",
+      "delete": "删除",
+      "viewOriginal": "在ArXiv上查看原始论文"
+    },
+    "metadata": {
+      "processed": "处理于 {{date}}",
+      "processingTime": "{{time}}秒",
+      "retried": "重试 {{count}} 次",
+      "failed": "处理失败：",
+      "failedAt": "失败于 {{date}}",
+      "format": "{{language}}"
+    },
+    "confirmDelete": {
+      "message": "确定要删除\"{{title}}\"吗？",
+      "warning": "这将永久删除：",
+      "items": {
+        "database": "• 数据库中的论文记录",
+        "files": "• 所有生成的文件（HTML、PDF、图像）",
+        "metadata": "• 所有相关元数据"
+      },
+      "undoWarning": "此操作无法撤销。"
+    },
+    "notifications": {
+      "submitted": "论文提交成功！处理已开始。",
+      "completed": "论文处理成功完成！",
+      "failed": "论文处理失败。请检查错误详情。",
+      "deleted": "论文\"{{title}}\"已成功删除。",
+      "deleteFailed": "删除论文失败：{{error}}",
+      "retryFailed": "重试失败：{{error}}",
+      "connectionError": "处理过程中连接错误",
+      "connectionErrorRetry": "重试过程中连接错误"
+    },
+    "errors": {
+      "loadFailed": "加载论文失败：{{error}}",
+      "processingFailed": "处理失败"
+    }
+  },
+  "paperDetail": {
+    "title": "论文详情",
+    "backToPapers": "返回论文列表",
+    "loading": "正在加载论文...",
+    "loadingContent": "正在加载内容...",
+    "notFound": "未找到论文",
+    "loadFailed": "加载论文失败：{{error}}",
+    "contentLoadFailed": "加载论文内容失败",
+    "generatedSummary": "生成的摘要",
+    "downloads": {
+      "html": "HTML",
+      "pdf": "PDF",
+      "json": "JSON",
+      "failed": "下载{{format}}失败：{{error}}"
+    },
+    "metadata": {
+      "status": "状态：",
+      "processed": "处理时间：{{date}}",
+      "processingTime": "处理用时：{{time}}秒",
+      "format": "语言：{{language}}",
+      "authors": "{{authors}}",
+      "retryInfo": "此论文已重试 {{count}} 次{{plural}}。",
+      "lastFailure": "最后一次失败：{{date}}",
+      "progress": "进度",
+      "errorDetails": "错误详情",
+      "retryInformation": "重试信息",
+      "processingTimeline": "处理时间线"
+    },
+    "status": {
+      "titles": {
+        "completed": "处理完成",
+        "failed": "处理失败",
+        "pending": "处理排队中",
+        "fetching": "获取论文内容",
+        "fetching_arxiv": "从ArXiv获取",
+        "fetching_content": "处理内容",
+        "processing_images": "处理图像",
+        "extracting": "提取信息",
+        "extracting_structure": "分析结构",
+        "extracting_content": "AI内容提取",
+        "generating": "生成输出",
+        "generating_html": "创建HTML摘要",
+        "generating_pdf": "创建PDF版本",
+        "finalizing": "完成处理",
+        "default": "处理中..."
+      },
+      "descriptions": {
+        "completed": "您的论文已成功处理并可供查看。",
+        "failed": "处理过程中发生错误。请查看下方的错误详情。",
+        "pending": "您的论文在处理队列中，即将开始。",
+        "fetching": "正在下载和准备论文内容进行处理。",
+        "fetching_arxiv": "正在从ArXiv服务器下载论文。",
+        "fetching_content": "正在处理和解析论文内容。",
+        "processing_images": "正在下载和处理嵌入的图像和图表。",
+        "extracting": "使用AI提取和结构化论文信息。",
+        "extracting_structure": "分析论文结构并识别关键部分。",
+        "extracting_content": "使用高级AI模型提取详细内容。",
+        "generating": "创建最终格式化的输出文件。",
+        "generating_html": "生成带有格式化内容的HTML摘要。",
+        "generating_pdf": "创建摘要的PDF版本。",
+        "finalizing": "保存元数据并完成处理流程。",
+        "default": "处理正在进行中..."
+      }
+    },
+    "processingSteps": {
+      "queued": "排队等待处理",
+      "fetching": "获取论文内容",
+      "extracting": "提取信息",
+      "generating": "生成输出",
+      "completed": "已完成"
     }
   }
 }

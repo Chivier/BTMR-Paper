@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Upload, Link, Loader2, AlertCircle } from 'lucide-react';
+import { Upload, Link, Loader2, AlertCircle, Globe } from 'lucide-react';
 import { 
   processPaper, 
   uploadFile, 
@@ -22,6 +22,7 @@ export const ProcessPaperPage: React.FC = () => {
   const [inputType, setInputType] = useState<'url' | 'file'>('url');
   const [inputValue, setInputValue] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedLanguage, setSelectedLanguage] = useState<'en' | 'zh'>('en');
   const [isProcessing, setIsProcessing] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [processingProgress, setProcessingProgress] = useState<ProcessingProgress | null>(null);
@@ -79,7 +80,7 @@ export const ProcessPaperPage: React.FC = () => {
         input_source,
         input_type,
         output_format: 'html',
-        language: 'en',
+        language: selectedLanguage,
         save_json: true
       };
       
@@ -204,6 +205,22 @@ export const ProcessPaperPage: React.FC = () => {
               </div>
             </div>
           )}
+
+          {/* Language Selection */}
+          <div className="flex items-center space-x-4">
+            <label className="text-sm font-medium text-gray-700 flex items-center">
+              <Globe className="w-4 h-4 mr-2" />
+              {t('pages:processPaper.languageSection.title')}:
+            </label>
+            <select
+              className="input flex-shrink-0 w-auto min-w-[120px]"
+              value={selectedLanguage}
+              onChange={(e) => setSelectedLanguage(e.target.value as 'en' | 'zh')}
+            >
+              <option value="en">{t('pages:processPaper.languageOptions.en')}</option>
+              <option value="zh">{t('pages:processPaper.languageOptions.zh')}</option>
+            </select>
+          </div>
 
           {/* Action Buttons */}
           <div className="flex space-x-3">

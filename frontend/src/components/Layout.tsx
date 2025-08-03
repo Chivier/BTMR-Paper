@@ -7,7 +7,8 @@ import {
   Settings, 
   Menu,
   X,
-  Plus
+  Plus,
+  Github
 } from 'lucide-react';
 import Banner from './Banner'; // Import the Banner component
 import { LanguageSwitcher } from './LanguageSwitcher';
@@ -119,7 +120,17 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                 {t('header.fullName')}
               </h2>
             </div>
-            <div className="flex items-center">
+            <div className="flex items-center gap-x-3">
+              <a
+                href="https://github.com/Chivier/BTMR-Paper"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center space-x-1 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors"
+                aria-label="View source on GitHub"
+              >
+                <Github className="w-4 h-4" />
+                <span className="hidden sm:inline">GitHub</span>
+              </a>
               <LanguageSwitcher />
             </div>
           </div>
