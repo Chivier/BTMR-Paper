@@ -28,6 +28,14 @@
       "label": "Upload PDF File",
       "placeholder": "Click to upload or drag and drop your PDF file here"
     },
+    "languageSection": {
+      "title": "Output Language",
+      "description": "Choose the language for the generated report"
+    },
+    "languageOptions": {
+      "en": "English",
+      "zh": "Chinese"
+    },
     "uploadProgress": "Uploading file...",
     "processingProgress": "Processing Paper",
     "processingCompleted": "Processing completed! Redirecting to papers page...",

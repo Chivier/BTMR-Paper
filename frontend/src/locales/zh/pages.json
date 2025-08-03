@@ -28,6 +28,14 @@
       "label": "上传PDF文件",
       "placeholder": "点击上传或将PDF文件拖拽到此处"
     },
+    "languageSection": {
+      "title": "输出语言",
+      "description": "选择生成报告的语言"
+    },
+    "languageOptions": {
+      "en": "英语",
+      "zh": "中文"
+    },
     "uploadProgress": "正在上传文件...",
     "processingProgress": "正在处理论文",
     "processingCompleted": "处理完成！正在跳转到论文页面...",

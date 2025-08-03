@@ -112,6 +112,7 @@ class OpenAIExtractor(LLMExtractor):
             return json.loads(response_content)
         except json.JSONDecodeError as e:
             print(f"Direct JSON parsing failed: {e}")
+            print(f"Raw response content: {response_content[:500]}...")  # Preview first 500 chars
         
         # Strategy 2: Extract JSON from code blocks (```json ... ```)
         try:
@@ -126,7 +127,7 @@ class OpenAIExtractor(LLMExtractor):
                         continue
         except Exception as e:
             print(f"Code block extraction failed: {e}")
-        
+    
         # Strategy 3: Find JSON objects using bracket matching
         try:
             print("Attempting bracket-based JSON extraction...")
