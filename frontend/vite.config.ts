@@ -12,6 +12,7 @@ export default defineConfig({
   },
   server: {
     port: parseInt(process.env.FRONTEND_PORT || '3000'),
+    host: true,
     proxy: {
       '/api': {
         target: `http://localhost:${process.env.BACKEND_PORT || '8000'}`,
@@ -32,7 +33,7 @@ export default defineConfig({
     host: true, // Listen on all addresses
     strictPort: true,
     cors: true,
-    allowedHosts: 'all', // Allow all hosts
+    allowedHosts: true, // Allow all hosts
     proxy: {
       '/api': {
         target: process.env.VITE_API_BASE_URL || `http://localhost:${process.env.BACKEND_PORT || '8000'}`,

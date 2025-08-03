@@ -20,4 +20,4 @@ EXPOSE 3000
 RUN npm run build
 
 # Run the application with environment-based backend URL
-CMD ["sh", "-c", "VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://backend:8000} npm run preview -- --host 0.0.0.0 --port ${FRONTEND_PORT:-3000}"]
+CMD ["sh", "-c", "VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://backend:8000} npm run preview -- --host 0.0.0.0 --port ${FRONTEND_PORT:-3000} --strictPort false"]
