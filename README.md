@@ -8,14 +8,14 @@ BTMR (Beautiful Text Mining Reader) is an intelligent academic paper processing 
 
 ### 🎯 Key Benefits
 - **Time Saving**: Automatically extract and summarize papers in minutes
-- **Multi-format Support**: Process ArXiv papers, PDFs
+- **Multi-format Support**: Process ArXiv URLs and PDFs
 - **Beautiful Output**: Generate clean HTML or PDF documents with embedded figures
 
 ## 🚀 Features
 
 ### 🔧 Backend API
-- **📄 Paper Processing**: Extract content from ArXiv papers, PDFs, and URLs
-- **🤖 AI-Powered Summarization**: Generate structured summaries using OpenAI GPT models
+- **📄 Paper Processing**: Extract content from ArXiv URLs and PDFs
+- **🤖 AI-Powered Summarization**: Generate structured summaries using LLMs
 - **💾 Multiple Output Formats**: HTML and PDF generation
 - **⚡ Real-time Progress**: WebSocket support for live processing updates
 - **📁 File Management**: Upload and manage paper
@@ -23,10 +23,9 @@ BTMR (Beautiful Text Mining Reader) is an intelligent academic paper processing 
 - **📊 Database Management**: SQLite-based paper metadata storage with migration support
 - **⚙️ Service Management**: Built-in startup script with health monitoring
 - **🖼️ Image Processing**: Advanced image extraction and optimization
-- **🔧 Configuration Management**: Centralized configuration with environment support
 
 ### 🎨 Frontend Interface
-- **⚛️ Modern React UI**: Built with React 18, TypeScript, and Tailwind CSS
+- **⚛️ Modern React UI**: Built with React 18, TypeScript, and Tailwind CSS, with fully i18n support
 - **📱 Responsive Design**: Works seamlessly on desktop and mobile devices
 - **🔄 Real-time Updates**: Live progress tracking during paper processing
 - **📚 Paper Management**: Browse, search, and organize processed papers
@@ -37,7 +36,7 @@ BTMR (Beautiful Text Mining Reader) is an intelligent academic paper processing 
 ### 📋 Prerequisites
 - Python 3.9 or higher
 - Node.js 18 or higher
-- OpenAI API key
+- OpenAI API key (or OpenAI compatiable LLM provider's key)
 - [uv](https://docs.astral.sh/uv/) for Python package management
 
 ### 🛠️ Option 1: One-Command Startup (Recommended)
@@ -51,14 +50,14 @@ cd BTMR-Paper
 
 # Set up environment variables
 cp .env.example .env
-# Edit .env and add your OpenAI API key
+# Edit .env and add your LLM providers API key
 
 # Start all services with one command
 ./startup.sh
 ```
 
 The startup script will:
-- Install all dependencies (Python and Node.js)
+- Install all dependencies
 - Initialize the SQLite database
 - Migrate existing CSV data if present
 - Start both backend and frontend servers
