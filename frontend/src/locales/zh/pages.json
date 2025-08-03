@@ -218,14 +218,14 @@
       "format": "{{language}}"
     },
     "confirmDelete": {
-      "title": "确定要删除\"{{title}}\"吗？",
-      "description": "这将永久删除：",
-      "items": [
-        "• 数据库中的论文记录",
-        "• 所有生成的文件（HTML、PDF、图像）",
-        "• 所有相关元数据"
-      ],
-      "warning": "此操作无法撤销。"
+      "message": "确定要删除\"{{title}}\"吗？",
+      "warning": "这将永久删除：",
+      "items": {
+        "database": "• 数据库中的论文记录",
+        "files": "• 所有生成的文件（HTML、PDF、图像）",
+        "metadata": "• 所有相关元数据"
+      },
+      "undoWarning": "此操作无法撤销。"
     },
     "notifications": {
       "submitted": "论文提交成功！处理已开始。",

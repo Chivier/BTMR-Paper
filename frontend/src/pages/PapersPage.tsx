@@ -236,12 +236,12 @@ export const PapersPage: React.FC = () => {
   const handleDeletePaper = async (paperId: string, paperTitle: string) => {
     // Show confirmation dialog
     const confirmDelete = window.confirm(
-      t('papers.deleteConfirm.message', { title: paperTitle }) + '\n\n' +
-      t('papers.deleteConfirm.warning') + '\n' +
-      t('papers.deleteConfirm.items.database') + '\n' +
-      t('papers.deleteConfirm.items.files') + '\n' +
-      t('papers.deleteConfirm.items.metadata') + '\n\n' +
-      t('papers.deleteConfirm.undoWarning')
+      t('papers.confirmDelete.message', { title: paperTitle }) + '\n\n' +
+      t('papers.confirmDelete.warning') + '\n' +
+      t('papers.confirmDelete.items.database') + '\n' +
+      t('papers.confirmDelete.items.files') + '\n' +
+      t('papers.confirmDelete.items.metadata') + '\n\n' +
+      t('papers.confirmDelete.undoWarning')
     );
 
     if (!confirmDelete) {
@@ -253,7 +253,7 @@ export const PapersPage: React.FC = () => {
       await deletePaper(paperId);
       
       // Show success notification
-      showNotification(t('papers.notifications.deleteSuccess', { title: paperTitle }), 'success');
+      showNotification(t('papers.notifications.deleted', { title: paperTitle }), 'success');
       
       // Reload papers to reflect the deletion
       loadPapers();

@@ -218,14 +218,14 @@
       "format": "{{language}}"
     },
     "confirmDelete": {
-      "title": "Are you sure you want to delete \"{{title}}\"?",
-      "description": "This will permanently remove:",
-      "items": [
-        "• The paper record from the database",
-        "• All generated files (HTML, PDF, images)",
-        "• All associated metadata"
-      ],
-      "warning": "This action cannot be undone."
+      "message": "Are you sure you want to delete \"{{title}}\"?",
+      "warning": "This will permanently remove:",
+      "items": {
+        "database": "• The paper record from the database",
+        "files": "• All generated files (HTML, PDF, images)",
+        "metadata": "• All associated metadata"
+      },
+      "undoWarning": "This action cannot be undone."
     },
     "notifications": {
       "submitted": "Paper submitted successfully! Processing has started.",
