@@ -25,6 +25,9 @@ COPY . .
 # Install Python dependencies using uv
 RUN uv sync --frozen
 
+# Install Playwright and its browsers
+RUN uv run playwright install --with-deps chromium
+
 # Expose port (default 8000, can be overridden)
 EXPOSE 8000
 
