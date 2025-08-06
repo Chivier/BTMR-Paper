@@ -319,7 +319,7 @@ class ArxivFetcher:
         raise Exception(f"Failed to fetch HTML content for arxiv ID: {arxiv_id}")
     
     def fetch_pdf(self, url: str) -> str:
-        """Fetch and extract text from PDF version using Surya OCR"""
+        """Fetch and extract text from PDF version using marker for best quality"""
         arxiv_id = self._extract_arxiv_id(url)
         if not arxiv_id:
             raise ValueError(f"Could not extract arxiv ID from URL: {url}")
@@ -337,53 +337,42 @@ class ArxivFetcher:
             tmp_path = tmp_file.name
         
         try:
-            # Import Surya components
-            from surya.ocr import run_ocr
-            from surya.model.detection.model import load_model as load_det_model, load_processor as load_det_processor
-            from surya.model.recognition.model import load_model as load_rec_model
-            from surya.model.recognition.processor import load_processor as load_rec_processor
-            from surya.input.load import load_pdf
+            # Try using marker for best quality extraction
+            if not os.environ.get('SKIP_MARKER', '').lower() == 'true':
+                try:
+                    from marker.convert import convert_single_pdf
+                    from marker.models import load_all_models
+                    
+                    # Load models
+                    print("Loading marker models for high-quality extraction...")
+                    model_lst = load_all_models()
+                    
+                    # Convert PDF to markdown
+                    print(f"Processing PDF with marker: {arxiv_id}.pdf")
+                    full_text, images, metadata = convert_single_pdf(
+                        tmp_path,
+                        model_lst,
+                        batch_multiplier=2
+                    )
+                    
+                    if full_text and full_text.strip():
+                        print(f"Successfully extracted {len(full_text)} characters with marker")
+                        return full_text
+                    else:
+                        print("Warning: marker returned empty text, falling back to PyPDF2")
+                        raise Exception("marker returned empty text")
+                        
+                except ImportError as e:
+                    print(f"marker not available: {e}")
+                    print("Falling back to PyPDF2 (lower quality)")
+                except Exception as e:
+                    print(f"marker failed: {e}")
+                    print("Falling back to PyPDF2 (lower quality)")
             
-            # Load models
-            print("Loading Surya OCR models...")
-            det_model = load_det_model()
-            det_processor = load_det_processor()
-            rec_model = load_rec_model()
-            rec_processor = load_rec_processor()
-            
-            # Load PDF pages as images
-            print(f"Processing PDF: {arxiv_id}.pdf")
-            images = load_pdf(tmp_path)
-            
-            # Run OCR on all pages
-            print(f"Running OCR on {len(images)} pages...")
-            predictions = run_ocr(
-                images, 
-                [["en", "zh"]]*len(images),  # Support English and Chinese
-                det_model, 
-                det_processor,
-                rec_model, 
-                rec_processor
-            )
-            
-            # Extract text from predictions
-            text_content = []
-            for page_idx, page_pred in enumerate(predictions):
-                page_text = []
-                for text_line in page_pred.text_lines:
-                    page_text.append(text_line.text)
-                
-                if page_text:
-                    text_content.append(f"\n--- Page {page_idx + 1} ---\n")
-                    text_content.append('\n'.join(page_text))
-            
-            return '\n'.join(text_content)
-        
-        except ImportError as e:
-            print(f"Surya not installed, falling back to PyPDF2: {e}")
-            # Fallback to PyPDF2 if Surya is not available
+            # Fallback to PyPDF2 only if marker is not available or explicitly skipped
             try:
                 import PyPDF2
+                print(f"Processing PDF with PyPDF2 (fallback): {arxiv_id}.pdf")
                 text_content = []
                 with open(tmp_path, 'rb') as pdf_file:
                     pdf_reader = PyPDF2.PdfReader(pdf_file)
@@ -391,12 +380,22 @@ class ArxivFetcher:
                     for page_num in range(len(pdf_reader.pages)):
                         page = pdf_reader.pages[page_num]
                         text = page.extract_text()
-                        text_content.append(text)
+                        if text.strip():  # Only add non-empty pages
+                            text_content.append(text)
                 
-                return '\n'.join(text_content)
-            except Exception as e2:
-                raise Exception(f"Both Surya and PyPDF2 failed: Surya error: {e}, PyPDF2 error: {e2}")
-        
+                full_text = '\n'.join(text_content)
+                if full_text.strip():
+                    print(f"Warning: Using PyPDF2 fallback, quality may be lower")
+                    return full_text
+                else:
+                    raise Exception("No text could be extracted from PDF")
+                    
+            except Exception as e:
+                raise Exception(f"Both marker and PyPDF2 failed: {e}")
+                    
+        except Exception as e:
+            raise Exception(f"Failed to process PDF: {e}")
+            
         finally:
             # Clean up temporary file
             if os.path.exists(tmp_path):
@@ -456,6 +455,77 @@ class ArxivFetcher:
                 os.unlink(tmp_path)
         
         raise Exception(f"Failed to extract source for arxiv ID: {arxiv_id}")
+    
+    def process_local_pdf(self, pdf_path: str) -> str:
+        """Process a local PDF file using marker for best quality
+        
+        Args:
+            pdf_path: Path to the local PDF file
+            
+        Returns:
+            Extracted text from the PDF
+        """
+        if not os.path.exists(pdf_path):
+            raise FileNotFoundError(f"PDF file not found: {pdf_path}")
+        
+        try:
+            # Try using marker for best quality
+            if not os.environ.get('SKIP_MARKER', '').lower() == 'true':
+                try:
+                    from marker.convert import convert_single_pdf
+                    from marker.models import load_all_models
+                    
+                    print("Loading marker models for high-quality extraction...")
+                    model_lst = load_all_models()
+                    
+                    print(f"Processing local PDF with marker: {os.path.basename(pdf_path)}")
+                    full_text, images, metadata = convert_single_pdf(
+                        pdf_path,
+                        model_lst,
+                        batch_multiplier=2
+                    )
+                    
+                    if full_text and full_text.strip():
+                        print(f"Successfully extracted {len(full_text)} characters with marker")
+                        return full_text
+                    else:
+                        print("Warning: marker returned empty text, falling back to PyPDF2")
+                        raise Exception("marker returned empty text")
+                        
+                except ImportError as e:
+                    print(f"marker not available: {e}")
+                    print("Falling back to PyPDF2 (lower quality)")
+                except Exception as e:
+                    print(f"marker failed: {e}")
+                    print("Falling back to PyPDF2 (lower quality)")
+            
+            # Fallback to PyPDF2 only if marker fails or is skipped
+            try:
+                import PyPDF2
+                print(f"Processing local PDF with PyPDF2 (fallback): {os.path.basename(pdf_path)}")
+                text_content = []
+                
+                with open(pdf_path, 'rb') as pdf_file:
+                    pdf_reader = PyPDF2.PdfReader(pdf_file)
+                    
+                    for page_num in range(len(pdf_reader.pages)):
+                        page = pdf_reader.pages[page_num]
+                        text = page.extract_text()
+                        if text.strip():
+                            text_content.append(text)
+                
+                full_text = '\n'.join(text_content)
+                if full_text.strip():
+                    print(f"Warning: Using PyPDF2 fallback, quality may be lower")
+                    return full_text
+                else:
+                    raise Exception("No text could be extracted from PDF")
+                    
+            except Exception as e:
+                raise Exception(f"Both marker and PyPDF2 failed: {e}")
+                    
+        except Exception as e:
+            raise Exception(f"Failed to process PDF: {e}")
     
     def fetch(self, url: str, format: str = "auto") -> Tuple[str, str, Dict[str, str]]:
         """
