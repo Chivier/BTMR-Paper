@@ -235,7 +235,8 @@
       "deleteFailed": "删除论文失败：{{error}}",
       "retryFailed": "重试失败：{{error}}",
       "connectionError": "处理过程中连接错误",
-      "connectionErrorRetry": "重试过程中连接错误"
+      "connectionErrorRetry": "重试过程中连接错误",
+      "duplicateFound": "该论文已使用相同的语言设置处理过。正在显示现有论文。"
     },
     "errors": {
       "loadFailed": "加载论文失败：{{error}}",

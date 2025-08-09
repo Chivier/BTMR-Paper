@@ -13,12 +13,15 @@ import os
 import re
 import requests
 import json
+import time
 from typing import Optional, Tuple, List, Dict
 from urllib.parse import urlparse, urljoin
 from bs4 import BeautifulSoup
 import tempfile
 from PIL import Image
 import shutil
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 
 class ArxivFetcher:
@@ -54,6 +57,25 @@ class ArxivFetcher:
         self.output_dir = output_dir
         self.images_dir = None
         self.downloaded_images = {}  # Map from original URL to local path
+        
+        # Configure session with proper timeouts and retry logic
+        self.session = requests.Session()
+        
+        # Set up retry strategy for transient failures
+        retry_strategy = Retry(
+            total=3,  # Total number of retries
+            status_forcelist=[429, 500, 502, 503, 504],  # HTTP status codes to retry
+            allowed_methods=["HEAD", "GET", "OPTIONS"],  # HTTP methods to retry
+            backoff_factor=1,  # Backoff factor for retries
+            raise_on_status=False  # Don't raise exception on status codes
+        )
+        
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        self.session.mount("http://", adapter)
+        self.session.mount("https://", adapter)
+        
+        # Set default timeouts: (connect_timeout, read_timeout)
+        self.timeout = (10, 30)  # 10s to connect, 30s to read
     
     def _extract_arxiv_id(self, url: str) -> Optional[str]:
         """
@@ -173,7 +195,7 @@ class ArxivFetcher:
             if img_url in self.downloaded_images:
                 return self.downloaded_images[img_url]
             
-            response = requests.get(img_url, headers=self.headers, timeout=10)
+            response = self.session.get(img_url, headers=self.headers, timeout=self.timeout)
             response.raise_for_status()
             
             # Determine file extension
@@ -224,9 +246,14 @@ class ArxivFetcher:
         
         # Try HTML version first
         html_url = f"{self.base_url}/html/{arxiv_id}"
-        response = requests.get(html_url, headers=self.headers)
+        try:
+            response = self.session.get(html_url, headers=self.headers, timeout=self.timeout)
+        except requests.exceptions.RequestException as e:
+            print(f"Failed to connect to ArXiv HTML endpoint: {e}")
+            # Immediate fallback to abstract page instead of raising exception
+            response = None
         
-        if response.status_code == 200:
+        if response and response.status_code == 200:
             soup = BeautifulSoup(response.text, 'html.parser')
             # Extract main content
             content = soup.find('div', {'class': 'ltx_page_main'})
@@ -296,7 +323,10 @@ class ArxivFetcher:
         
         # Fallback to abstract page
         abs_url = f"{self.base_url}/abs/{arxiv_id}"
-        response = requests.get(abs_url, headers=self.headers)
+        try:
+            response = self.session.get(abs_url, headers=self.headers, timeout=self.timeout)
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"Failed to connect to ArXiv abstract endpoint: {e}")
         
         if response.status_code == 200:
             soup = BeautifulSoup(response.text, 'html.parser')
@@ -328,8 +358,11 @@ class ArxivFetcher:
         
         # Download PDF to temporary file
         with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as tmp_file:
-            response = requests.get(pdf_url, headers=self.headers, stream=True)
-            response.raise_for_status()
+            try:
+                response = self.session.get(pdf_url, headers=self.headers, stream=True, timeout=self.timeout)
+                response.raise_for_status()
+            except requests.exceptions.RequestException as e:
+                raise Exception(f"Failed to download PDF from ArXiv: {e}")
             
             for chunk in response.iter_content(chunk_size=8192):
                 tmp_file.write(chunk)
@@ -411,8 +444,11 @@ class ArxivFetcher:
         source_url = f"{self.base_url}/e-print/{arxiv_id}"
         
         with tempfile.NamedTemporaryFile(suffix='.tar.gz', delete=False) as tmp_file:
-            response = requests.get(source_url, headers=self.headers, stream=True)
-            response.raise_for_status()
+            try:
+                response = self.session.get(source_url, headers=self.headers, stream=True, timeout=self.timeout)
+                response.raise_for_status()
+            except requests.exceptions.RequestException as e:
+                raise Exception(f"Failed to download source from ArXiv: {e}")
             
             for chunk in response.iter_content(chunk_size=8192):
                 tmp_file.write(chunk)

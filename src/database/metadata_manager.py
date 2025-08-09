@@ -9,6 +9,8 @@ import json
 from datetime import datetime
 from typing import Dict, Any, Optional, List
 
+from loguru import logger
+
 from .interface import DatabaseInterface, PaperRecord
 from .sqlite_impl import SQLiteDatabase, DatabaseConfig
 
@@ -434,7 +436,7 @@ class DatabaseMetadataManager:
     def health_check(self) -> Dict[str, Any]:
         """
         Perform a health check on the database.
-        
+
         Returns:
             Dictionary containing health check results
         """
@@ -445,6 +447,47 @@ class DatabaseMetadataManager:
             'healthy': is_healthy,
             'connection_info': connection_info,
             'statistics': self.get_statistics() if is_healthy else {}
+        }
+
+    def find_duplicate_paper(self, title: str, arxiv_url: Optional[str], language: str) -> Optional[Dict[str, Any]]:
+        """
+        Find duplicate paper based on title/arxiv_url and language.
+
+        Args:
+            title: Paper title to check
+            arxiv_url: ArXiv URL to check (if any)
+            language: Report language to check
+            
+        Returns:
+            Paper metadata dict if duplicate found, None otherwise
+        """
+        paper = self.database.find_duplicate_paper(title, arxiv_url, language)
+        
+        if paper is None:
+            return None
+        
+        # Convert to dictionary for compatibility
+        logger.info(f"Found duplicate paper: {paper.paper_id} - {paper.title}")
+        return paper
+        return {
+            'paper_id': paper.paper_id,
+            'title': paper.title,
+            'authors': paper.authors,
+            'arxiv_url': paper.arxiv_url,
+            'format_used': paper.format_used,
+            'output_format': paper.output_format,
+            'output_path': paper.output_path,
+            'pdf_path': paper.pdf_path,
+            'num_figures': str(paper.num_figures),
+            'num_tables': str(paper.num_tables),
+            'processing_time': str(paper.processing_time),
+            'language': paper.language,
+            'file_size_kb': str(paper.file_size_kb),
+            'status': paper.status,
+            'error_message': paper.error_message,
+            'retry_count': str(paper.retry_count),
+            'timestamp': paper.timestamp.isoformat(),
+            'last_failed_at': paper.last_failed_at.isoformat() if paper.last_failed_at else ''
         }
 
     def __del__(self):

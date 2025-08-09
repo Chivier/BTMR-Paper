@@ -235,7 +235,8 @@
       "deleteFailed": "Failed to delete paper: {{error}}",
       "retryFailed": "Retry failed: {{error}}",
       "connectionError": "Connection error during processing",
-      "connectionErrorRetry": "Connection error during retry"
+      "connectionErrorRetry": "Connection error during retry",
+      "duplicateFound": "This paper has already been processed with the same language settings. Showing existing paper."
     },
     "errors": {
       "loadFailed": "Failed to load papers: {{error}}",

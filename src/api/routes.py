@@ -5,9 +5,11 @@ Defines REST endpoints for paper processing, file management, and WebSocket conn
 """
 import os
 import json
+import asyncio
 from typing import List, Optional
 from datetime import datetime
 from pathlib import Path
+from loguru import logger
 
 from fastapi import (
     APIRouter, 
@@ -114,6 +116,22 @@ async def process_paper(
     Returns immediately with paper metadata and starts background processing.
     """
     try:
+        # Check for duplicate paper first (synchronous - SQLite operations are fast)
+        duplicate_paper = paper_service.check_duplicate_paper(request.input_source, request.input_type.value, request.language.value)
+        
+        if duplicate_paper:
+            # Return duplicate found response
+            return {
+                "status": "duplicate_found",
+                "message": "This paper has already been processed with the same language settings.",
+                "duplicate_paper": {
+                    "paper_id": duplicate_paper.paper_id,
+                    "title": duplicate_paper.title,
+                    "authors": duplicate_paper.authors,
+                    "language": duplicate_paper.language
+                }
+            }
+        
         # Generate paper ID for tracking
         paper_id = f"paper_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{hash(request.input_source) % 10000:04d}"
         
@@ -129,19 +147,40 @@ async def process_paper(
         # Create pending paper entry immediately
         paper_metadata = paper_service.create_pending_paper(request, paper_id)
         
+        logger.info(f"Processing started for paper ID: {paper_id}")
+        
         # Start processing in background with the generated paper_id
         async def process_with_progress(req: PaperProcessRequest, pid: str):
             try:
-                await paper_service.process_paper(
-                    req, 
-                    progress_callback=manager.send_progress_update,
-                    paper_id=pid
+                # Set overall timeout for the entire processing pipeline
+                result = await asyncio.wait_for(
+                    paper_service.process_paper(
+                        req, 
+                        progress_callback=manager.send_progress_update,
+                        paper_id=pid
+                    ),
+                    timeout=900.0  # 15 minutes total timeout
                 )
                 # Remove from active papers when completed
                 if pid in paper_service.active_papers:
                     del paper_service.active_papers[pid]
+            except asyncio.TimeoutError:
+                error_msg = f"Processing timed out after 15 minutes"
+                logger.error(f"Background processing timed out for {pid}")
+                error_progress = ProcessingProgress(
+                    paper_id=pid,
+                    status='failed',
+                    progress=0.0,
+                    message=error_msg,
+                    error=error_msg
+                )
+                await manager.send_progress_update(error_progress)
+                
+                # Clean up active papers
+                if pid in paper_service.active_papers:
+                    del paper_service.active_papers[pid]
             except Exception as e:
-                print(f"Background processing failed for {pid}: {e}")
+                logger.error(f"Background processing failed for {pid}: {e}")
                 # Error is already logged in the process_paper method, just send WebSocket update
                 error_progress = ProcessingProgress(
                     paper_id=pid,
@@ -158,6 +197,7 @@ async def process_paper(
         
         background_tasks.add_task(process_with_progress, request, paper_id)
         
+        logger.info(f"Background processing task started for paper ID: {paper_id}")
         return {
             "paper_id": paper_id,
             "status": "processing_started",

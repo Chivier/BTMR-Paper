@@ -8,11 +8,16 @@ import sys
 from pathlib import Path
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, JSONResponse
 import uvicorn
+from loguru import logger
+
+# Import and initialize logging configuration with backtrace logging
+from ..logging_config import setup_logging
+setup_logging()
 
 from .routes import router
 from .models import ErrorResponse
@@ -52,6 +57,22 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Global exception handler for unhandled exceptions
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """
+    Global exception handler that logs full backtraces for all unhandled exceptions.
+    """
+    logger.exception(f"Unhandled exception occurred during {request.method} {request.url}: {str(exc)}")
+    
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": "Internal server error occurred. Please check the server logs for details.",
+            "error_type": type(exc).__name__
+        }
+    )
 
 # Include API routes
 app.include_router(router, prefix="/api/v1")
