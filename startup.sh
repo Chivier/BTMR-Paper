@@ -160,6 +160,11 @@ main() {
         print_error "npm is required but not installed"
         exit 1
     fi
+
+    if ! command_exists nc; then
+        print_error "netcat is required but not installed, Please install it with package manager."
+        exit 1
+    fi
     
     print_success "System requirements check passed"
     
