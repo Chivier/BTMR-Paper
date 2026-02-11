@@ -11,6 +11,7 @@ import shutil
 from datetime import datetime
 from typing import Dict, List, Optional, Any, Tuple
 from contextlib import contextmanager
+from loguru import logger
 
 from .interface import DatabaseInterface, DatabaseConfig, PaperRecord
 
@@ -358,6 +359,56 @@ class SQLiteDatabase(DatabaseInterface):
         except sqlite3.Error as e:
             print(f"Error deleting paper: {e}")
             return False
+
+    def find_duplicate_paper(self, title: str, arxiv_url: Optional[str], language: str) -> Optional[PaperRecord]:
+        """
+        Find duplicate paper based on title/arxiv_url and language.
+        
+        Args:
+            title: Paper title to check
+            arxiv_url: ArXiv URL to check (if any)
+            language: Report language to check
+            
+        Returns:
+            PaperRecord if duplicate found, None otherwise
+        """
+        # Check for exact title match and same language
+        title_sql = """
+        SELECT * FROM papers 
+        WHERE LOWER(title) = LOWER(?) AND language = ?
+        ORDER BY timestamp DESC 
+        LIMIT 1
+        """
+        
+        # Check for ArXiv URL match and same language (if arxiv_url provided)
+        arxiv_sql = """
+        SELECT * FROM papers 
+        WHERE arxiv_url = ? AND language = ?
+        ORDER BY timestamp DESC 
+        LIMIT 1
+        """
+        
+        try:
+            with self.get_cursor() as cursor:
+                # First check by ArXiv URL if provided
+                if arxiv_url and arxiv_url.strip():
+                    cursor.execute(arxiv_sql, (arxiv_url, language))
+                    row = cursor.fetchone()
+                    if row:
+                        logger.info(f"Found duplicate paper by ArXiv URL: {arxiv_url}")
+                        return self._row_to_paper_record(row)
+                
+                # Then check by title
+                cursor.execute(title_sql, (title, language))
+                row = cursor.fetchone()
+                if row:
+                    logger.info(f"Found duplicate paper by title: {title} (language: {language})")
+                    return self._row_to_paper_record(row)
+                
+                return None
+        except sqlite3.Error as e:
+            print(f"Error finding duplicate paper: {e}")
+            return None
 
     def execute_raw_query(
         self, 

@@ -11,6 +11,7 @@ import shutil
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple, Any
 from pathlib import Path
+from loguru import logger
 
 from ..arxiv_fetcher import ArxivFetcher
 from ..paper_extractor import OpenAIExtractor
@@ -39,6 +40,40 @@ class PaperProcessingService:
         self.active_processes: Dict[str, ProcessingProgress] = {}
         self.active_papers: Dict[str, PaperMetadata] = {}
         
+    def check_duplicate_paper(self, input_source: str, input_type: str, language: str) -> Optional[Any]:
+        """
+        Check if a paper with same title/arxiv_url and language already exists.
+        
+        Args:
+            input_source: The input source (URL, ArXiv URL, etc.)
+            input_type: Type of input ('arxiv', 'url', 'pdf', 'markdown')
+            language: Language code ('en', 'zh')
+            
+        Returns:
+            Existing paper metadata if duplicate found, None otherwise
+        """
+        # For ArXiv papers, check by ArXiv URL
+        if input_type == 'arxiv':
+            arxiv_url = input_source
+            # Try to extract a basic title for checking
+            title = f"ArXiv Paper: {input_source.split('/')[-1]}"
+        elif input_type == 'url':
+            # For URL papers, use the URL as identifier and basic title
+            arxiv_url = input_source  # Use URL as identifier
+            title = f"URL Paper: {input_source}"
+        else:
+            # For PDF/markdown, we can't easily check duplicates without processing first
+            return None
+            
+        # Check for existing paper with same identifier and language using synchronous database call
+        duplicate = self.metadata_logger.find_duplicate_paper(
+            title=title,
+            arxiv_url=arxiv_url,
+            language=language
+        )
+        
+        return duplicate
+
     def create_pending_paper(self, request: PaperProcessRequest, paper_id: str) -> PaperMetadata:
         """Create a pending paper entry immediately when processing starts."""
         # Determine initial title based on input
@@ -265,6 +300,9 @@ class PaperProcessingService:
             return paper_id, extracted_data, str(output_path)
             
         except Exception as e:
+            # Log the full exception with backtrace
+            logger.exception(f"Paper processing failed for {paper_id}: {str(e)}")
+            
             # Update progress with error
             await self._update_progress(
                 paper_id, ProcessingStatus.FAILED, 0.0,
@@ -342,9 +380,17 @@ class PaperProcessingService:
             image_processor = ImageProcessor(output_dir=str(paper_folder / 'images'))
             
             if request.input_type == InputType.ARXIV:
-                fetcher = ArxivFetcher(output_dir=str(paper_folder))
-                content, format_used, image_mapping = fetcher.fetch(
-                    request.input_source, request.fetch_format
+                # Run ArXiv fetching in thread pool with timeout to avoid blocking
+                loop = asyncio.get_event_loop()
+                
+                def fetch_arxiv():
+                    fetcher = ArxivFetcher(output_dir=str(paper_folder))
+                    return fetcher.fetch(request.input_source, request.fetch_format)
+                
+                # Use asyncio.wait_for instead of signal for timeout
+                content, format_used, image_mapping = await asyncio.wait_for(
+                    loop.run_in_executor(None, fetch_arxiv),
+                    timeout=180.0  # 3 minutes timeout
                 )
                 return content, format_used, image_mapping
                 
@@ -389,16 +435,21 @@ class PaperProcessingService:
                 base_url=request.openai_base_url
             )
             
-            # Run extraction in thread pool to avoid blocking
+            # Run extraction in thread pool to avoid blocking with timeout
             loop = asyncio.get_event_loop()
-            extracted_data = await loop.run_in_executor(
-                None,
-                lambda: extractor.extract(
+            
+            def extract_data():
+                return extractor.extract(
                     content,
                     language=request.language.value,
                     format_type=format_used,
                     image_mapping=image_mapping
                 )
+            
+            # Use asyncio.wait_for instead of signal for timeout
+            extracted_data = await asyncio.wait_for(
+                loop.run_in_executor(None, extract_data),
+                timeout=300.0  # 5 minutes timeout
             )
             
             if "error" in extracted_data:

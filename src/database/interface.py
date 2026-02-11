@@ -189,12 +189,27 @@ class DatabaseInterface(ABC):
     def delete_paper(self, paper_id: str) -> bool:
         """
         Delete a paper record.
-        
+
         Args:
             paper_id: Paper ID to delete
-            
+
         Returns:
             True if successful, False otherwise
+        """
+        pass
+
+    @abstractmethod
+    def find_duplicate_paper(self, title: str, arxiv_url: Optional[str], language: str) -> Optional[PaperRecord]:
+        """
+        Find duplicate paper based on title/arxiv_url and language.
+        
+        Args:
+            title: Paper title to check
+            arxiv_url: ArXiv URL to check (if any)  
+            language: Report language to check
+            
+        Returns:
+            PaperRecord if duplicate found, None otherwise
         """
         pass
 

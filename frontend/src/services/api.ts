@@ -17,12 +17,13 @@ import {
 
 // Get API base URL from environment or use default
 // In production, if VITE_API_BASE_URL is not set, use relative paths
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
+console.log('Using API base URL:', API_BASE_URL);
 // Create axios instance with base configuration
 const api = axios.create({
   baseURL: API_BASE_URL ? `${API_BASE_URL}/api/v1` : '/api/v1',
-  timeout: 30000,
+  timeout: 60000, // Increase timeout to 60 seconds for paper processing
   headers: {
     'Content-Type': 'application/json',
   },
@@ -67,8 +68,24 @@ export const healthCheck = async (): Promise<HealthResponse> => {
 export const processPaper = async (
   request: PaperProcessRequest
 ): Promise<{ paper_id: string; status: string; message: string }> => {
-  const response = await api.post('/papers/process', request);
-  return response.data;
+  try {
+    console.log('Making API call to /papers/process with:', request);
+    const response = await api.post('/papers/process', request, {
+      timeout: 60000, // Specific timeout for paper processing
+    });
+    console.log('API response status:', response.status);
+    console.log('API response data:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error in processPaper API call:', {
+      message: (error as any).message,
+      code: (error as any).code,
+      status: (error as any).response?.status,
+      statusText: (error as any).response?.statusText,
+      data: (error as any).response?.data
+    });
+    throw error;
+  }
 };
 
 export const processPaperSync = async (
@@ -328,10 +345,23 @@ export const isValidUrl = (url: string): boolean => {
 // Error handling utilities
 
 export const handleApiError = (error: any): string => {
+  // Handle timeout errors specifically
+  if (error.code === 'ECONNABORTED' && error.message?.includes('timeout')) {
+    return 'Request timed out. The server may be busy processing other requests. Please try again.';
+  }
+  
+  // Handle network connection errors
+  if (error.code === 'ECONNREFUSED') {
+    return 'Unable to connect to the server. Please check if the backend is running.';
+  }
+  
+  // Handle server response errors
   if (error.response?.data?.error) {
     return error.response.data.error;
   } else if (error.response?.data?.detail) {
     return error.response.data.detail;
+  } else if (error.response?.status) {
+    return `Server error (${error.response.status}): ${error.response.statusText || 'Unknown error'}`;
   } else if (error.message) {
     return error.message;
   } else {

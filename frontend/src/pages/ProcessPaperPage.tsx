@@ -13,7 +13,8 @@ import {
 import { 
   PaperProcessRequest, 
   ProcessingProgress, 
-  UploadedFile 
+  UploadedFile,
+  ProcessPaperResponse 
 } from '@/types';
 
 export const ProcessPaperPage: React.FC = () => {
@@ -50,10 +51,12 @@ export const ProcessPaperPage: React.FC = () => {
       
       // Step 1: Handle file upload if needed
       if (inputType === 'file' && selectedFile) {
+        console.log('Starting file upload...');
         uploadedFileData = await uploadFile(selectedFile, (progress) => {
           setUploadProgress(progress);
         });
         setUploadProgress(100);
+        console.log('File upload completed:', uploadedFileData);
       }
       
       // Step 2: Determine input type and source
@@ -84,27 +87,99 @@ export const ProcessPaperPage: React.FC = () => {
         save_json: true
       };
       
-      // Step 4: Start paper processing
-      const response = await processPaper(request);
-      const paperId = response.paper_id;
+      console.log('Sending paper processing request:', request);
       
-      // Reset form after successful submission
-      setInputValue('');
-      setSelectedFile(null);
-      setUploadProgress(0);
+      // Step 4: Start paper processing with detailed logging
+      let response: ProcessPaperResponse;
+      try {
+        const apiResponse = await processPaper(request);
+        console.log('Received response from processPaper:', apiResponse);
+        
+        // Validate response structure
+        if (!apiResponse || typeof apiResponse !== 'object') {
+          throw new Error('Invalid response format: response is not an object');
+        }
+        
+        // Check if it's a valid response type
+        if (!apiResponse.status) {
+          throw new Error('Invalid response format: missing status field');
+        }
+        
+        response = apiResponse as ProcessPaperResponse;
+        console.log('Successfully parsed response:', response);
+      } catch (apiError: any) {
+        console.error('Error in processPaper API call:', apiError);
+        // Add more specific error information
+        if (apiError.code === 'ECONNABORTED') {
+          throw new Error('Request timed out. Please check your connection and try again.');
+        } else if (apiError.response) {
+          console.error('API response error:', {
+            status: apiError.response.status,
+            statusText: apiError.response.statusText,
+            data: apiError.response.data
+          });
+          throw new Error(`Server error (${apiError.response.status}): ${handleApiError(apiError)}`);
+        } else if (apiError.request) {
+          console.error('Network error - no response received:', apiError.request);
+          throw new Error('Network error: Unable to reach the server. Please check your connection.');
+        } else {
+          throw apiError; // Re-throw original error
+        }
+      }
       
-      // Navigate to papers page immediately after successful submission
-      navigate('/papers', { 
-        state: { 
-          newPaperId: paperId,
-          showProcessing: true 
-        } 
-      });
+      // Handle different response types
+      if (response.status === 'duplicate_found') {
+        console.log('Duplicate paper found:', (response as any).duplicate_paper);
+        // Show duplicate paper notification and navigate to papers page
+        setError(null);
+        setIsProcessing(false);
+        
+        // Reset form
+        setInputValue('');
+        setSelectedFile(null);
+        setUploadProgress(0);
+        
+        // Navigate to papers page with duplicate notification
+        navigate('/papers', {
+          state: {
+            duplicateFound: true,
+            duplicatePaper: (response as any).duplicate_paper,
+            originalInput: inputValue
+          }
+        });
+        return;
+      }
+      
+      // Handle processing_started response
+      if (response.status === 'processing_started') {
+        const processingResponse = response as any;
+        if (!processingResponse.paper_id) {
+          throw new Error('Invalid response: missing paper_id for processing_started status');
+        }
+        
+        console.log('Processing started successfully for paper:', processingResponse.paper_id);
+        
+        // Reset form after successful submission
+        setInputValue('');
+        setSelectedFile(null);
+        setUploadProgress(0);
+        
+        // Navigate to papers page immediately after successful submission
+        navigate('/papers', { 
+          state: { 
+            newPaperId: processingResponse.paper_id,
+            showProcessing: true 
+          } 
+        });
+      } else {
+        console.warn('Unexpected response status:', (response as any).status);
+        throw new Error(`Unexpected response status: ${(response as any).status}`);
+      }
       
     } catch (err) {
+      console.error('Error in handleProcessPaper:', err);
       const errorMessage = handleApiError(err);
-      setError(errorMessage);
-      console.error('Error processing paper:', err);
+      setError(`Processing failed: ${errorMessage}`);
     } finally {
       setIsProcessing(false);
     }

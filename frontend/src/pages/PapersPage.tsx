@@ -74,15 +74,31 @@ export const PapersPage: React.FC = () => {
     loadPapers();
   }, []);
 
-  // Handle navigation from process page with new paper
+  // Handle navigation from process page with new paper or duplicate detection
   useEffect(() => {
-    const state = location.state as { newPaperId?: string; showProcessing?: boolean };
+    const state = location.state as { 
+      newPaperId?: string; 
+      showProcessing?: boolean;
+      duplicateFound?: boolean;
+      duplicatePaper?: any;
+      originalInput?: string;
+    };
+    
     if (state?.newPaperId && state?.showProcessing) {
       // Show success notification
       showNotification(t('papers.notifications.submitted'), 'success');
       
       // Start tracking the new paper's progress
       startProgressTracking(state.newPaperId);
+      
+      // Clear the state to prevent re-triggering
+      window.history.replaceState({}, document.title);
+    } else if (state?.duplicateFound && state?.duplicatePaper) {
+      // Show duplicate notification
+      showNotification(
+        `Paper "${state.originalInput}" has already been processed with the same language settings. Showing existing paper: "${state.duplicatePaper.title}"`,
+        'warning'
+      );
       
       // Clear the state to prevent re-triggering
       window.history.replaceState({}, document.title);

@@ -88,6 +88,30 @@ export interface PaperMetadata {
   last_failed_at?: string;
 }
 
+export interface DuplicatePaperInfo {
+  paper_id: string;
+  title: string;
+  authors: string;
+  created_at: string;
+  language: string;
+  output_format: string;
+}
+
+export interface DuplicateFoundResponse {
+  status: 'duplicate_found';
+  message: string;
+  duplicate_paper: DuplicatePaperInfo;
+}
+
+export interface ProcessingStartedResponse {
+  paper_id: string;
+  status: 'processing_started';
+  message: string;
+  paper_metadata: PaperMetadata;
+}
+
+export type ProcessPaperResponse = DuplicateFoundResponse | ProcessingStartedResponse;
+
 export interface PaperResponse {
   metadata: PaperMetadata;
   extracted_data: ExtractedData;
