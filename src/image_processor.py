@@ -13,17 +13,12 @@ from bs4 import BeautifulSoup
 
 # Import Surya - optional due to dependency issues
 try:
-    from surya.detection import DetectionPredictor
-    from surya.recognition import RecognitionPredictor
-    from surya.input.load import load_from_file
-    from surya.model.detection.model import load_model as load_det_model, load_processor as load_det_processor
-    from surya.model.recognition.model import load_model as load_rec_model
-    from surya.model.recognition.processor import load_processor as load_rec_processor
-    from surya.input.load import load_pdf
+    from surya.models import DetectionPredictor, RecognitionPredictor
+    from PIL import Image
+    import pypdfium2 as pdfium
     SURYA_AVAILABLE = True
 except (ImportError, RuntimeError) as e:
-    print(f"Warning: Surya OCR not available: {e}")
-    print("PDF processing will use basic extraction. For better results, fix the dependency issues.")
+    # Surya OCR is optional - use basic PDF extraction if not available
     SURYA_AVAILABLE = False
 
 class ImageProcessor:
@@ -33,30 +28,9 @@ class ImageProcessor:
 
     def process_markdown(self, markdown_path: str) -> Tuple[str, dict]:
         image_mapping = {}
-        if not SURYA_AVAILABLE:
-            # Fallback: just return the original markdown content
-            return Path(markdown_path).read_text(encoding='utf-8'), image_mapping
-            
-        det_predictor = DetectionPredictor()
-        rec_predictor = RecognitionPredictor()
-
-        images = load_from_file(markdown_path)
-        predictions = rec_predictor(images)
-
-        updated_markdown = Path(markdown_path).read_text(encoding='utf-8')
-        img_references = re.findall(r'!\[.*?\]\(.*?\)', updated_markdown)
-
-        for i, pred in enumerate(predictions):
-            if i < len(img_references):
-                img_filename = f"{Path(markdown_path).stem}_fig_{i+1}.png"
-                img_path = self.output_dir / img_filename
-                pred.image.save(img_path)
-                
-                # Replace the old image reference with the new local path
-                updated_markdown = updated_markdown.replace(img_references[i], f'![{pred.caption or ""}]({img_path})', 1)
-                image_mapping[img_references[i]] = str(img_path)
-
-        return updated_markdown, image_mapping
+        # For markdown files, we just return the content as-is
+        # Surya is primarily for PDF OCR, not markdown processing
+        return Path(markdown_path).read_text(encoding='utf-8'), image_mapping
 
     def process_html(self, url: str) -> Tuple[str, str, dict]:
         response = requests.get(url)
@@ -126,21 +100,23 @@ class ImageProcessor:
         image_mapping = {}
         
         # Try Surya OCR first (advanced OCR with better accuracy)
-        if SURYA_AVAILABLE:
+        if SURYA_AVAILABLE and not os.environ.get('SKIP_SURYA'):
             try:
                 print("Using Surya OCR for PDF processing...")
                 
-                # Load models
-                det_model, det_processor = load_det_model(), load_det_processor()
-                rec_model, rec_processor = load_rec_model(), load_rec_processor()
+                # Convert PDF to images using pypdfium2
+                pdf = pdfium.PdfDocument(pdf_path)
+                images = []
+                for page_index in range(len(pdf)):
+                    page = pdf[page_index]
+                    pil_image = page.render(scale=2).to_pil()
+                    images.append(pil_image)
                 
-                # Load PDF pages as images
-                images = load_pdf(pdf_path)
                 print(f"Loaded {len(images)} pages from PDF")
                 
-                # Perform OCR on each page
-                det_predictor = DetectionPredictor(det_model, det_processor)
-                rec_predictor = RecognitionPredictor(rec_model, rec_processor)
+                # Initialize predictors with default models
+                det_predictor = DetectionPredictor()
+                rec_predictor = RecognitionPredictor()
                 
                 # Process text detection and recognition
                 det_results = det_predictor(images)
@@ -150,8 +126,10 @@ class ImageProcessor:
                 full_text = []
                 for page_idx, page_result in enumerate(rec_results):
                     page_text = []
-                    for line in page_result.text_lines:
-                        page_text.append(line.text)
+                    if hasattr(page_result, 'text_lines'):
+                        for line in page_result.text_lines:
+                            if hasattr(line, 'text'):
+                                page_text.append(line.text)
                     
                     if page_text:
                         full_text.append(f"=== Page {page_idx + 1} ===")
@@ -159,10 +137,10 @@ class ImageProcessor:
                         full_text.append("")  # Add blank line between pages
                     
                     # Save page image for reference
-                    if hasattr(page_result, 'image') and page_result.image:
+                    if page_idx < len(images):
                         img_filename = f"pdf_page_{page_idx + 1}.png"
                         img_path = self.output_dir / img_filename
-                        page_result.image.save(img_path)
+                        images[page_idx].save(img_path)
                         image_mapping[f"page_{page_idx + 1}"] = {
                             "url": str(img_path),
                             "caption": f"PDF Page {page_idx + 1}",
