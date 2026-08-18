@@ -1,3 +1,5 @@
+
+
 # BTMR - Beautiful Text Mining Reader 📚🤖
 
 A modern, AI-powered web application for extracting, analyzing, and summarizing academic papers. BTMR transforms complex research papers into digestible, structured summaries with a beautiful interface.
@@ -53,7 +55,7 @@ BTMR (Beautiful Text Mining Reader) is an intelligent academic paper processing 
 
 ### 📋 Prerequisites
 
-- **Python**: 3.9 or higher
+- **Python**: 3.10 or higher
 - **Node.js**: 18 or higher  
 - **LLM API Key**: OpenAI or compatible provider
 - **Package Manager**: [uv](https://docs.astral.sh/uv/) (recommended)
